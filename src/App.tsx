@@ -58,10 +58,23 @@ export default function App() {
   useEffect(() => {
     const init = async () => {
       let savedId = localStorage.getItem('ghost_peer_id') || undefined;
-      const id = await ghostPeer.init(savedId) as string;
-      localStorage.setItem('ghost_peer_id', id);
-      setPeerId(id);
-      setLoading(false);
+      
+      // Add a timeout to init so we don't block the UI forever
+      const initPromise = ghostPeer.init(savedId);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('init_timeout')), 5000)
+      );
+
+      try {
+        const id = await Promise.race([initPromise, timeoutPromise]) as string;
+        localStorage.setItem('ghost_peer_id', id);
+        setPeerId(id);
+      } catch (err) {
+        console.error("Peer init failed or timed out", err);
+        // We still let them into the app, functions might try to re-init later
+      } finally {
+        setLoading(false);
+      }
     };
 
     init();

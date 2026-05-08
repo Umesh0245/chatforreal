@@ -241,7 +241,11 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     <div className="flex flex-col h-full bg-[#050505]">
       <header 
         className="px-4 pb-3 border-b border-[#141414] flex items-center gap-3 bg-[#050505]/95 backdrop-blur-sm sticky top-0 z-30 shadow-sm shrink-0"
-        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+        style={{ 
+          paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+          paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+          paddingRight: 'max(1rem, env(safe-area-inset-right))'
+        }}
       >
         <button onClick={onBack} className="p-2 -ml-2 hover:bg-[#141414] rounded-full text-[#8E9299] shrink-0">
           <ArrowLeft className="w-5 h-5" />
@@ -276,7 +280,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {!isCalling ? (
             <button 
               onClick={startVoiceCall}
@@ -288,30 +292,40 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
           ) : (
             <button 
               onClick={endCall}
-              className="p-2 bg-red-500 text-white rounded-full animate-pulse"
+              className="p-2 bg-red-500/10 text-red-500 rounded-full hover:bg-red-500/20"
             >
               <PhoneOff className="w-5 h-5" />
             </button>
           )}
 
-          <button onClick={() => setIsSearching(!isSearching)} className="p-2 hover:bg-[#141414] rounded-full text-[#8E9299]">
+          <button onClick={() => setSearchQuery(searchQuery ? '' : ' ')} className="p-2 hover:bg-[#141414] rounded-full text-[#8E9299]">
             <Search className="w-5 h-5" />
           </button>
           
           <div className="relative">
-            <button onClick={() => setShowMenu(!showMenu)} className="p-2 hover:bg-[#141414] rounded-full text-[#8E9299]">
+            <button 
+              onClick={() => setShowMenu(!showMenu)} 
+              className={cn("p-2 hover:bg-[#141414] rounded-full text-[#8E9299]", showMenu && "text-[#F27D26] bg-[#141414]")}
+            >
               <MoreVertical className="w-5 h-5" />
             </button>
-            {showMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-[#151619] border border-[#141414] rounded-lg shadow-xl z-20 py-1 overflow-hidden">
-                <button onClick={toggleBlock} className="w-full px-4 py-2 text-left text-xs font-mono hover:bg-[#141414] text-red-500 flex items-center gap-2">
-                  <Ban className="w-4 h-4" /> {chat.isBlocked ? 'DROP BLOCK' : 'REJECT BUFFER'}
-                </button>
-                <button onClick={deleteConversation} className="w-full px-4 py-2 text-left text-xs font-mono hover:bg-[#141414] text-[#8E9299] flex items-center gap-2">
-                  <Trash2 className="w-4 h-4" /> WIPE BUFFER_LOG
-                </button>
-              </div>
-            )}
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="absolute right-0 mt-2 w-48 bg-[#151619] border border-[#141414] rounded-xl shadow-2xl z-50 overflow-hidden"
+                >
+                  <button onClick={toggleBlock} className="w-full px-4 py-3 text-left text-xs font-mono hover:bg-[#141414] text-red-500 flex items-center gap-2 border-b border-[#141414]">
+                    <Ban className="w-4 h-4" /> {chat.isBlocked ? 'DROP BLOCK' : 'REJECT BUFFER'}
+                  </button>
+                  <button onClick={deleteConversation} className="w-full px-4 py-3 text-left text-xs font-mono hover:bg-red-500/10 text-red-500 flex items-center gap-2">
+                    <Trash2 className="w-4 h-4" /> WIPE BUFFER_LOG
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </header>

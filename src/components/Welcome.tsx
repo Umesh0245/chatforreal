@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Activity, Share2, Smartphone, ArrowRight, Plus, Terminal, Cpu } from 'lucide-react';
 import { generateKey } from '../lib/crypto';
 import { db } from '../lib/db';
+import { ghostPeer } from '../lib/peer';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface WelcomeProps {

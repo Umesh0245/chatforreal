@@ -32,14 +32,17 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId }: ChatList
 
   return (
     <div className="flex flex-col h-full bg-[#050505]">
-      <header className="p-6 border-b border-[#141414]">
+      <header 
+        className="p-6 border-b border-[#141414] bg-[#050505]/50 backdrop-blur-md"
+        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+      >
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-mono italic flex items-center gap-2 text-[#F27D26]">
-            <Cpu className="w-5 h-5" /> BRIDGE[INIT]
+            <Cpu className="w-5 h-5" /> BRIDGE<span className="not-italic text-[#E4E3E0] opacity-50">[INIT]</span>
           </h1>
           <button 
             onClick={() => onSelectChat('new')}
-            className="p-2 bg-[#F27D26] text-[#050505] rounded-lg hover:bg-opacity-80 transition-all shadow-lg"
+            className="p-2 bg-[#F27D26] text-[#050505] rounded-lg hover:bg-opacity-80 transition-all shadow-lg shadow-[#F27D26]/10 active:scale-95"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -96,9 +99,12 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId }: ChatList
         )}
       </div>
 
-      <footer className="p-4 border-t border-[#141414] text-[10px] font-mono text-[#8E9299] flex justify-between uppercase">
+      <footer 
+        className="p-4 border-t border-[#141414] text-[10px] font-mono text-[#8E9299] flex justify-between uppercase shrink-0"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
         <span>BUFFER OK</span>
-        <span className="text-green-500 underline">ENCRYPTED</span>
+        <span className="text-green-500 underline decoration-green-500/30">ENCRYPTED</span>
       </footer>
     </div>
   );
