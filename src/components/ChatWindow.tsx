@@ -76,8 +76,15 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
 
     // Responsive keyboard scroll handler
     const onViewportChange = () => {
-      if (window.visualViewport && window.visualViewport.height < window.innerHeight) {
-        scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      if (window.visualViewport) {
+        const isKeyboardUp = window.visualViewport.height < window.innerHeight;
+        if (isKeyboardUp) {
+          // Scroll immediately and with a slight delay to account for layout shifts
+          scrollRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+          setTimeout(() => {
+            scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 300);
+        }
       }
     };
     window.visualViewport?.addEventListener('resize', onViewportChange);
@@ -86,11 +93,17 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     ghostPeer.onCallIncoming = (call) => {
       setIncomingCall(call);
       
-      if (Notification.permission === 'granted' && document.hidden) {
-        new Notification(`INCOMING_CALL: ${chat?.partnerName || 'PEER'}`, {
+      if (Notification.permission === 'granted') {
+        const notification = new Notification(`INCOMING_CALL: ${chat?.partnerName || 'PEER'}`, {
           body: "SECURE_VOICE_SIGNAL_INCOMING",
-          icon: 'https://img.icons8.com/fluency/512/link.png'
+          icon: 'https://img.icons8.com/fluency/512/link.png',
+          tag: 'incoming-call',
+          requireInteraction: true
         });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
       }
     };
 
@@ -237,25 +250,25 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
   );
 
   if (!chat) return (
-    <div className="flex-grow bg-[#050505] flex items-center justify-center">
+    <div className="flex-grow bg-[var(--bg-app)] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <Cpu className="w-8 h-8 text-[#F27D26] animate-spin opacity-20" />
-        <span className="text-[10px] font-mono text-[#F27D26]/20 tracking-[0.5em]">BUFFER_LOADING...</span>
+        <Cpu className="w-8 h-8 text-[var(--accent)] animate-spin opacity-20" />
+        <span className="text-[10px] font-mono text-[var(--accent)]/20 tracking-[0.5em]">BUFFER_LOADING...</span>
       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col h-full bg-[#050505]">
+    <div className="flex flex-col h-full bg-[var(--bg-app)]">
       <header 
-        className="px-4 pb-3 border-b border-[#141414] flex items-center gap-3 bg-[#050505]/95 backdrop-blur-sm sticky top-0 z-30 shadow-sm shrink-0"
+        className="px-4 pb-3 border-b border-[var(--border-color)] flex items-center gap-3 bg-[var(--bg-app)]/95 backdrop-blur-sm sticky top-0 z-30 shadow-sm shrink-0"
         style={{ 
           paddingTop: 'max(3.5rem, env(safe-area-inset-top))',
           paddingLeft: 'max(1rem, env(safe-area-inset-left))',
           paddingRight: 'max(1rem, env(safe-area-inset-right))'
         }}
       >
-        <button onClick={onBack} className="p-2 -ml-2 hover:bg-[#141414] rounded-full text-[#8E9299] shrink-0">
+        <button onClick={onBack} className="p-2 -ml-2 hover:bg-[var(--bg-surface)] rounded-full text-[var(--fg-muted)] shrink-0">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-grow min-w-0">
@@ -267,7 +280,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
               onChange={(e) => setRenameText(e.target.value.toUpperCase())}
               onBlur={handleRename}
               onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-              className="bg-[#151619] border-b border-[#F27D26] text-[10px] font-mono text-[#F27D26] focus:outline-none w-full"
+              className="bg-[var(--bg-input)] border-b border-[var(--accent)] text-[10px] font-mono text-[var(--accent)] focus:outline-none w-full"
             />
           ) : (
             <h2 
@@ -275,14 +288,14 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
                 setRenameText(chat.partnerName);
                 setIsRenaming(true);
               }}
-              className="text-[10px] font-mono uppercase tracking-[0.1em] text-[#F27D26] truncate cursor-pointer hover:opacity-80"
+              className="text-[10px] font-mono uppercase tracking-[0.1em] text-[var(--accent)] truncate cursor-pointer hover:opacity-80"
             >
               {chat.partnerName}
             </h2>
           )}
           <div className="flex items-center gap-1.5 overflow-hidden">
-            <Cpu className={cn("w-2.5 h-2.5 text-[#F27D26]/50 animate-pulse shrink-0", peerStatus === 'lost' && "text-red-500 animate-none")} />
-            <span className={cn("text-[8px] font-mono text-[#8E9299]/50 tracking-widest truncate", peerStatus === 'lost' && "text-red-500")}>
+            <Cpu className={cn("w-2.5 h-2.5 text-[var(--accent)]/50 animate-pulse shrink-0", peerStatus === 'lost' && "text-red-500 animate-none")} />
+            <span className={cn("text-[8px] font-mono text-[var(--fg-muted)] tracking-widest truncate", peerStatus === 'lost' && "text-red-500")}>
               {peerStatus === 'stable' ? 'SIGNAL:STABLE' : 'SIGNAL:LOST'}
             </span>
           </div>
@@ -293,7 +306,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             <button 
               onClick={startVoiceCall}
               disabled={chat.partnerUid === 'waiting' || peerStatus === 'lost'}
-              className="p-2 hover:bg-[#141414] rounded-full text-green-500/50 disabled:opacity-20"
+              className="p-2 hover:bg-[var(--bg-surface)] rounded-full text-green-500/50 disabled:opacity-20"
             >
               <Phone className="w-5 h-5" />
             </button>
@@ -306,14 +319,14 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             </button>
           )}
 
-          <button onClick={() => setSearchQuery(searchQuery ? '' : ' ')} className="p-2 hover:bg-[#141414] rounded-full text-[#8E9299]">
+          <button onClick={() => setSearchQuery(searchQuery ? '' : ' ')} className="p-2 hover:bg-[var(--bg-surface)] rounded-full text-[var(--fg-muted)]">
             <Search className="w-5 h-5" />
           </button>
           
           <div className="relative">
             <button 
               onClick={() => setShowMenu(!showMenu)} 
-              className={cn("p-2 hover:bg-[#141414] rounded-full text-[#8E9299]", showMenu && "text-[#F27D26] bg-[#141414]")}
+              className={cn("p-2 hover:bg-[var(--bg-surface)] rounded-full text-[var(--fg-muted)]", showMenu && "text-[var(--accent)] bg-[var(--bg-surface)]")}
             >
               <MoreVertical className="w-5 h-5" />
             </button>
@@ -323,9 +336,9 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="absolute right-0 mt-2 w-48 bg-[#151619] border border-[#141414] rounded-xl shadow-2xl z-50 overflow-hidden"
+                  className="absolute right-0 mt-2 w-48 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 overflow-hidden"
                 >
-                  <button onClick={toggleBlock} className="w-full px-4 py-3 text-left text-xs font-mono hover:bg-[#141414] text-red-500 flex items-center gap-2 border-b border-[#141414]">
+                  <button onClick={toggleBlock} className="w-full px-4 py-3 text-left text-xs font-mono hover:bg-[var(--bg-surface)] text-red-500 flex items-center gap-2 border-b border-[var(--border-color)]">
                     <Ban className="w-4 h-4" /> {chat.isBlocked ? 'DROP BLOCK' : 'REJECT BUFFER'}
                   </button>
                   <button onClick={deleteConversation} className="w-full px-4 py-3 text-left text-xs font-mono hover:bg-red-500/10 text-red-500 flex items-center gap-2">
@@ -346,7 +359,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
         <motion.div 
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-[#F27D26] text-[#050505] p-3 flex items-center justify-between z-40 shadow-2xl"
+          className="bg-[var(--accent)] text-[#050505] p-3 flex items-center justify-between z-40 shadow-2xl"
         >
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-[#050505] rounded-full animate-ping" />
@@ -362,7 +375,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             </button>
             <button 
               onClick={endCall}
-              className="p-2 px-4 bg-[#050505] text-[#F27D26] rounded-lg hover:bg-black transition-all font-mono text-[10px] font-bold"
+              className="p-2 px-4 bg-[#050505] text-[var(--accent)] rounded-lg hover:bg-black transition-all font-mono text-[10px] font-bold"
             >
               END_LINK
             </button>
@@ -377,26 +390,26 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#050505]/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[var(--bg-app)]/95 backdrop-blur-xl"
           >
-            <div className="bg-[#151619] border-2 border-[#F27D26] rounded-[2rem] p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(242,125,38,0.2)]">
-              <div className="w-20 h-20 bg-[#F27D26]/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                <div className="absolute inset-0 bg-[#F27D26] rounded-full animate-ping opacity-20" />
-                <Phone className="w-8 h-8 text-[#F27D26]" />
+            <div className="bg-[var(--bg-surface)] border-2 border-[var(--accent)] rounded-[2rem] p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(242,125,38,0.2)]">
+              <div className="w-20 h-20 bg-[var(--accent)]/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                <div className="absolute inset-0 bg-[var(--accent)] rounded-full animate-ping opacity-20" />
+                <Phone className="w-8 h-8 text-[var(--accent)]" />
               </div>
-              <h2 className="text-[#E4E3E0] font-mono text-xl mb-2 tracking-widest">{chat.partnerName}</h2>
-              <p className="text-[#8E9299] font-mono text-[10px] mb-10 opacity-50">INCOMING_SECURE_SIGNAL...</p>
+              <h2 className="text-[var(--fg-app)] font-mono text-xl mb-2 tracking-widest">{chat.partnerName}</h2>
+              <p className="text-[var(--fg-muted)] font-mono text-[10px] mb-10 opacity-50">INCOMING_SECURE_SIGNAL...</p>
               
               <div className="grid grid-cols-2 gap-4">
                 <button 
                   onClick={rejectCall}
-                  className="bg-[#141414] text-red-500 border border-red-500/20 py-4 rounded-2xl font-mono text-xs hover:bg-red-500/10 active:scale-95 transition-all"
+                  className="bg-[var(--bg-surface)] text-red-500 border border-red-500/20 py-4 rounded-2xl font-mono text-xs hover:bg-red-500/10 active:scale-95 transition-all"
                 >
                   REJECT
                 </button>
                 <button 
                   onClick={acceptCall}
-                  className="bg-[#F27D26] text-[#050505] py-4 rounded-2xl font-mono text-xs font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#F27D26]/20"
+                  className="bg-[var(--accent)] text-[#050505] py-4 rounded-2xl font-mono text-xs font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--accent)]/20"
                 >
                   ACCEPT
                 </button>
@@ -412,7 +425,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="px-4 py-2 border-b border-[#141414]"
+            className="px-4 py-2 border-b border-[var(--border-color)]"
           >
             <input 
               autoFocus
@@ -420,7 +433,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
               placeholder="FILTER_DATA_FRAMES..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#151619] border border-[#141414] rounded-md py-1 px-3 text-[10px] font-mono focus:outline-none focus:border-[#F27D26]"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--fg-app)] rounded-md py-1 px-3 text-[10px] font-mono focus:outline-none focus:border-[var(--accent)]"
             />
           </motion.div>
         )}
@@ -435,7 +448,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             <div key={idx} className="space-y-1">
               {showTime && (
                 <div className="flex justify-center my-4">
-                  <span className="text-[10px] font-mono text-[#8E9299] bg-[#141414] px-2 py-1 rounded-sm uppercase tracking-[0.2em]">
+                  <span className="text-[10px] font-mono text-[var(--fg-muted)] bg-[var(--bg-surface)] px-2 py-1 rounded-sm uppercase tracking-[0.2em]">
                     FRAME_TS::{formatDate(msg.timestamp)}
                   </span>
                 </div>
@@ -443,7 +456,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
               <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
                 <div className={cn(
                   "max-w-[95%] px-3 py-2 font-mono text-[11px] leading-relaxed break-words border-l-2",
-                  isMe ? "bg-[#141414] text-[#F27D26] border-[#F27D26]/40" : "bg-[#0A0A0A] text-[#8E9299] border-[#8E9299]/20"
+                  isMe ? "bg-[var(--bg-surface)] text-[var(--accent)] border-[var(--accent)]/40" : "bg-[var(--bg-input)] text-[var(--fg-muted)] border-[var(--fg-muted)]/20"
                 )}>
                   <div className="flex items-center gap-2 mb-2 opacity-30 text-[8px] uppercase tracking-widest border-b border-white/5 pb-1">
                     <span>{isMe ? 'Local_Node' : 'Remote_Peer'}</span>
@@ -458,14 +471,14 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
         <div ref={scrollRef} className="h-4" />
       </div>
 
-      <footer className="p-2 border-t border-[#141414] bg-[#050505] shrink-0">
-        <div className="max-w-4xl mx-auto">
+      <footer className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-app)] shrink-0 z-10">
+        <div className="max-w-4xl mx-auto pb-[env(safe-area-inset-bottom)]">
           {chat.isBlocked ? (
             <div className="bg-red-900/10 border border-red-900/30 rounded-lg p-3 flex items-center justify-center gap-2 text-red-500/70 text-[10px] font-mono uppercase tracking-[0.3em]">
               <ShieldAlert className="w-4 h-4 opacity-50" /> KERNEL_REJECTED
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 bg-[#151619] rounded-2xl border border-[#141414] p-1.5 focus-within:border-[#F27D26]/50 transition-all">
+            <div className="flex items-center gap-1.5 bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)] p-1.5 focus-within:border-[var(--accent)]/50 transition-all shadow-lg shadow-black/50">
               <input 
                 type="text"
                 autoComplete="off"
@@ -474,16 +487,16 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
                 spellCheck="false"
                 inputMode="text"
                 enterKeyHint="send"
-                placeholder="APPEND_FRAME_DATA..."
+                placeholder="APPEND_DATA..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 onFocus={() => {
                   setTimeout(() => {
                     scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                  }, 400);
+                  }, 300);
                 }}
-                className="flex-grow bg-transparent border-none py-2.5 px-3 text-base focus:outline-none transition-all font-mono placeholder:opacity-30 min-h-[44px]"
+                className="flex-grow bg-transparent border-none py-3 px-3 text-[15px] md:text-sm text-[var(--fg-app)] focus:outline-none transition-all font-mono placeholder:opacity-20 min-h-[48px]"
               />
               <button 
                 onClick={handleSend}
@@ -491,15 +504,14 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
                 className={cn(
                   "p-3 rounded-xl transition-all shadow-lg active:scale-90",
                   inputText.trim() 
-                    ? "bg-[#F27D26] text-[#050505] shadow-[#F27D26]/10" 
-                    : "bg-[#141414] text-[#8E9299]/20"
+                    ? "bg-[var(--accent)] text-[#050505] shadow-[var(--accent)]/10" 
+                    : "bg-[var(--bg-surface)] text-[var(--fg-muted)]/20"
                 )}
               >
                 <Terminal className="w-5 h-5" />
               </button>
             </div>
           )}
-          <div className="h-[env(safe-area-inset-bottom)]" />
         </div>
       </footer>
     </div>

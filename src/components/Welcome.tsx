@@ -27,6 +27,15 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
     if (rid && key && name && pid) {
       handleJoinShared(rid, key, name, pid);
     }
+
+    // Auto-request or check notifications
+    if ("Notification" in window) {
+      if (Notification.permission === "default") {
+        setTimeout(() => {
+          Notification.requestPermission();
+        }, 1500);
+      }
+    }
   }, []);
 
   const handleJoinShared = async (rid: string, key: string, name: string, pid: string) => {
@@ -110,15 +119,15 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="bg-[#151619] border border-[#141414] rounded-3xl p-6 md:p-8 text-center shadow-2xl"
+            className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl p-6 md:p-8 text-center shadow-2xl"
           >
-            <div className="w-16 h-16 bg-[#F27D26]/5 rounded-sm flex items-center justify-center mx-auto mb-6 border border-[#F27D26]/10 transform rotate-45">
+            <div className="w-16 h-16 bg-[var(--accent)]/5 rounded-sm flex items-center justify-center mx-auto mb-6 border border-[var(--accent)]/10 transform rotate-45">
               <div className="transform -rotate-45">
-                <Cpu className="w-8 h-8 text-[#F27D26]" />
+                <Cpu className="w-8 h-8 text-[var(--accent)]" />
               </div>
             </div>
-            <h2 className="text-2xl font-mono uppercase tracking-[0.2em] mb-2 text-[#E4E3E0]">BRIDGE_NODE</h2>
-            <p className="text-[#8E9299] text-[9px] font-mono mb-10 opacity-40 uppercase leading-relaxed text-center tracking-widest px-4">
+            <h2 className="text-2xl font-mono uppercase tracking-[0.2em] mb-2 text-[var(--fg-app)]">BRIDGE_NODE</h2>
+            <p className="text-[var(--fg-muted)] text-[9px] font-mono mb-10 opacity-40 uppercase leading-relaxed text-center tracking-widest px-4">
               SECURE_P2P_BRIDGE_ACTIVE // BUFFER_AUTO_WIPE
             </p>
             
@@ -129,29 +138,29 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
                   placeholder="BUFFER_NAME (OPTIONAL)"
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value.toUpperCase())}
-                  className="w-full bg-[#050505] border border-[#141414] rounded-xl py-4 px-4 text-xs font-mono text-[#F27D26] focus:outline-none focus:border-[#F27D26]/50 transition-all placeholder:text-[#8E9299]/20"
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-color)] rounded-xl py-4 px-4 text-xs font-mono text-[var(--accent)] focus:outline-none focus:border-[var(--accent)]/50 transition-all placeholder:text-[var(--fg-muted)]/20"
                 />
                 {!customName && (
-                  <Terminal className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E9299]/20" />
+                  <Terminal className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-muted)]/20" />
                 )}
               </div>
 
               <button 
                 onClick={createRoom}
-                className="w-full bg-[#F27D26] text-[#050505] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#F27D26]/10 font-bold"
+                className="w-full bg-[var(--accent)] text-[#050505] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--accent)]/10 font-bold"
               >
                 <Plus className="w-5 h-5" /> INITIALIZE NODE BUFFER
               </button>
               
               <div className="flex items-center gap-4 py-2">
-                <div className="h-[1px] flex-grow bg-[#141414]" />
-                <span className="text-[10px] font-mono text-[#8E9299]">OFFLINE READY</span>
-                <div className="h-[1px] flex-grow bg-[#141414]" />
+                <div className="h-[1px] flex-grow bg-[var(--border-color)]" />
+                <span className="text-[10px] font-mono text-[var(--fg-muted)]">OFFLINE READY</span>
+                <div className="h-[1px] flex-grow bg-[var(--border-color)]" />
               </div>
 
-              <div className="bg-[#050505]/50 border border-[#141414] rounded-xl p-4 flex items-center gap-3">
-                <Smartphone className="w-5 h-5 text-[#8E9299]" />
-                <p className="text-[9px] font-mono text-[#8E9299] text-left leading-tight">
+              <div className="bg-[var(--bg-app)]/50 border border-[var(--border-color)] rounded-xl p-4 flex items-center gap-3">
+                <Smartphone className="w-5 h-5 text-[var(--fg-muted)]" />
+                <p className="text-[9px] font-mono text-[var(--fg-muted)] text-left leading-tight">
                   NOTE: IOS SANDBOX LIMITS. IF YOU "ADD TO HOME SCREEN", STORAGE IS FRESH. START NEW BRIDGE THERE.
                 </p>
               </div>
@@ -162,26 +171,26 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
             key="step2"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-[#151619] border border-[#141414] rounded-3xl p-6 md:p-8 shadow-2xl text-center w-full max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto"
+            className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl p-6 md:p-8 shadow-2xl text-center w-full max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto"
           >
             <div className="mb-6 flex justify-center">
-              <div className="bg-white p-4 rounded-2xl border-4 border-[#F27D26] inline-block">
+              <div className="bg-white p-4 rounded-2xl border-4 border-[var(--accent)] inline-block">
                 <QRCodeSVG value={pairingUrl} size={180} />
               </div>
             </div>
             
-            <h3 className="text-xl font-mono uppercase tracking-tighter mb-4 text-[#F27D26]">SYNC_NODE_DATA</h3>
-            <p className="text-[#8E9299] text-[10px] font-mono mb-6 uppercase text-center">
+            <h3 className="text-xl font-mono uppercase tracking-tighter mb-4 text-[var(--accent)]">SYNC_NODE_DATA</h3>
+            <p className="text-[var(--fg-muted)] text-[10px] font-mono mb-6 uppercase text-center">
               SCAN THIS CODE WITH REMOTE PEER TO ESTABLISH AN E2EE KERNEL TUNNEL.
             </p>
             
             <div className="flex gap-2 mb-6">
-              <div className="flex-grow bg-[#050505] border border-[#141414] rounded-xl px-4 py-3 text-xs font-mono text-[#8E9299] truncate flex items-center">
+              <div className="flex-grow bg-[var(--bg-app)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-xs font-mono text-[var(--fg-muted)] truncate flex items-center">
                 {feedback || pairingUrl}
               </div>
               <button 
                 onClick={copyUrl}
-                className="p-3 bg-[#141414] text-[#E4E3E0] rounded-xl hover:bg-[#151619] border border-[#141414]"
+                className="p-3 bg-[var(--bg-surface)] text-[var(--fg-app)] rounded-xl hover:bg-[var(--bg-input)] border border-[var(--border-color)]"
               >
                 <Share2 className="w-5 h-5" />
               </button>
@@ -189,7 +198,7 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
 
             <button 
               onClick={() => onJoinChat(newRoomId)}
-              className="w-full border border-[#F27D26] text-[#F27D26] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-[#F27D26] hover:text-[#050505] transition-all"
+              className="w-full border border-[var(--accent)] text-[var(--accent)] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-[var(--accent)] hover:text-[#050505] transition-all"
             >
               ACCESS BUFFER <ArrowRight className="w-5 h-5" />
             </button>

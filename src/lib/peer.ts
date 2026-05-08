@@ -91,12 +91,17 @@ class GhostPeer {
         });
 
         this.peer.on('call', (call) => {
-          if (Notification.permission === 'granted' && document.hidden) {
-            new Notification(`FLUX_BRIDGE: SECURE_VOICE`, {
-              body: "INCOMING_P2P_SIGNAL_DETECTED",
+          if (Notification.permission === 'granted') {
+            const notification = new Notification(`SECURE_VOICE_SIGNAL`, {
+              body: "INCOMING_P2P_LINK_REQUEST",
               icon: 'https://img.icons8.com/fluency/512/link.png',
-              requireInteraction: true
+              requireInteraction: true,
+              tag: 'incoming-call'
             });
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
           }
           this.onCallIncoming?.(call);
         });
@@ -188,12 +193,17 @@ class GhostPeer {
 
           this.onMessage?.(rid, decrypted);
 
-          if (Notification.permission === 'granted' && document.hidden) {
-            new Notification(`FLUX_BRIDGE: ${chat.partnerName}`, {
+          if (Notification.permission === 'granted') {
+            const notification = new Notification(`${chat.partnerName || 'FLUX_BRIDGE'}`, {
               body: decrypted,
               icon: 'https://img.icons8.com/fluency/512/link.png',
-              tag: rid
+              tag: rid,
+              renotify: true
             });
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
           }
         }
       }

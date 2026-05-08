@@ -3,21 +3,51 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand: #F27D26;
+  --color-surface: var(--bg-surface);
+  --color-border-main: var(--border-color);
+}
+
+:root {
+  --bg-app: #050505;
+  --fg-app: #E4E3E0;
+  --bg-surface: #0a0a0a;
+  --bg-input: #151619;
+  --border-color: #141414;
+  --accent: #F27D26;
+  --fg-muted: rgba(228, 227, 224, 0.4);
+}
+
+:root.light {
+  --bg-app: #f9f9f8;
+  --fg-app: #141414;
+  --bg-surface: #ffffff;
+  --bg-input: #efefed;
+  --border-color: #e5e5e3;
+  --accent: #F27D26;
+  --fg-muted: rgba(20, 20, 20, 0.5);
 }
 
 html,
 body,
 #root {
-  background-color: #050505;
-  color: #E4E3E0;
+  background-color: var(--bg-app);
+  color: var(--fg-app);
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
+  overscroll-behavior: none;
 }
 
 #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;

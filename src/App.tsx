@@ -14,22 +14,31 @@ export default function App() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(true);
-  const [viewportHeight, setViewportHeight] = useState('100vh');
+  const [viewportHeight, setViewportHeight] = useState('100dvh');
+  const [viewportTop, setViewportTop] = useState(0);
 
   useEffect(() => {
-    const updateHeight = () => {
-      // Use dvh as primary if supported, fallback to vh or visualViewport
-      const vh = window.innerHeight;
-      setViewportHeight(`${vh}px`);
+    const updateViewport = () => {
+      if (window.visualViewport) {
+        setViewportHeight(`${window.visualViewport.height}px`);
+        setViewportTop(window.visualViewport.offsetTop);
+      } else {
+        setViewportHeight('100dvh');
+        setViewportTop(0);
+      }
+      // Ensure no browser shift context
+      window.scrollTo(0, 0);
     };
 
-    window.addEventListener('resize', updateHeight);
-    window.visualViewport?.addEventListener('resize', updateHeight);
-    updateHeight();
+    window.visualViewport?.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('scroll', updateViewport);
+    window.addEventListener('resize', updateViewport);
+    updateViewport();
 
     return () => {
-      window.removeEventListener('resize', updateHeight);
-      window.visualViewport?.removeEventListener('resize', updateHeight);
+      window.visualViewport?.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('resize', updateViewport);
     };
   }, []);
 
@@ -65,7 +74,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[500] flex items-center justify-center bg-[#050505] text-[#F27D26]">
+      <div className="fixed inset-0 z-[500] flex items-center justify-center bg-[var(--bg-app)] text-[var(--accent)]">
         <motion.div 
           animate={{ opacity: [1, 0.5, 1], scale: [1, 1.05, 1] }}
           transition={{ duration: 1.5, repeat: Infinity }}
@@ -80,13 +89,16 @@ export default function App() {
 
   return (
     <div 
-      className="fixed inset-0 bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden"
-      style={{ height: viewportHeight }}
+      className="bg-[var(--bg-app)] text-[var(--fg-app)] font-sans selection:bg-[var(--accent)] selection:text-[#050505] overflow-hidden w-full fixed inset-0"
+      style={{ 
+        height: viewportHeight,
+        transform: `translateY(${viewportTop}px)`
+      }}
     >
       <div className="flex h-full w-full relative">
         {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
         <div className={cn(
-          "flex-col border-r border-[#141414] transition-all duration-300",
+          "flex-col border-r border-[var(--border-color)] transition-all duration-300",
           activeChatId ? "hidden md:flex w-full md:w-80" : "flex w-full md:w-80"
         )}>
           <ChatList onSelectChat={setActiveChatId} activeChatId={activeChatId} currentPeerId={peerId} />
@@ -94,7 +106,7 @@ export default function App() {
 
         {/* Main Chat Area */}
         <div className={cn(
-          "flex-grow bg-[#050505] transition-all duration-300 relative",
+          "flex-grow bg-[var(--bg-app)] transition-all duration-300 relative",
           !activeChatId ? "hidden md:flex" : "flex"
         )}>
           <AnimatePresence mode="wait">
@@ -124,7 +136,7 @@ export default function App() {
             key="lock-screen"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-[#050505]"
+            className="fixed inset-0 z-[100] bg-[var(--bg-app)]"
           >
             <LockScreen onUnlock={() => setIsLocked(false)} />
           </motion.div>
