@@ -113,12 +113,27 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
                 <Key className="w-4 h-4 text-[var(--fg-muted)]" />
                 <span className="text-xs uppercase font-mono">Access_PIN</span>
               </div>
-              <button 
-                onClick={() => setShowPinChange(!showPinChange)}
-                className="text-[10px] text-[var(--accent)] uppercase font-bold hover:underline"
-              >
-                {showPinChange ? 'Cancel' : 'Change_Key'}
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setShowPinChange(!showPinChange)}
+                  className="text-[10px] text-[var(--accent)] uppercase font-bold hover:underline"
+                >
+                  {showPinChange ? 'Cancel' : 'Configure'}
+                </button>
+                {localStorage.getItem('ghost_pin') && !showPinChange && (
+                  <button 
+                    onClick={() => {
+                      if(confirm('Disable PIN lock?')) {
+                        localStorage.removeItem('ghost_pin');
+                        window.location.reload();
+                      }
+                    }}
+                    className="text-[10px] text-red-500 uppercase font-bold hover:underline"
+                  >
+                    Disable
+                  </button>
+                )}
+              </div>
             </div>
             {showPinChange && (
               <div className="space-y-3 pt-2">

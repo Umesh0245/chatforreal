@@ -15,7 +15,7 @@ export default function App() {
   const [peerId, setPeerId] = useState<string | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLocked, setIsLocked] = useState(true);
+  const [isLocked, setIsLocked] = useState(() => !!localStorage.getItem('ghost_pin'));
   const [showScanner, setShowScanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [viewportHeight, setViewportHeight] = useState('100dvh');
@@ -122,13 +122,27 @@ export default function App() {
   }, []);
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [peerStatus, setPeerStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
   const [outboxCount, setOutboxCount] = useState(0);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOffline = () => {
+      setIsOnline(false);
+      setPeerStatus('disconnected');
+    };
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    // Track peer status
+    const updateStatus = () => {
+      if (!ghostPeer.peer || ghostPeer.peer.disconnected || ghostPeer.peer.destroyed) {
+        setPeerStatus('disconnected');
+      } else {
+        setPeerStatus('connected');
+      }
+    };
+    const statusInterval = setInterval(updateStatus, 3000);
 
     const checkOutbox = async () => {
       const count = await db.outbox.count();
@@ -140,6 +154,7 @@ export default function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       clearInterval(interval);
+      clearInterval(statusInterval);
     };
   }, []);
 
@@ -160,54 +175,59 @@ export default function App() {
 
   return (
     <>
-      {/* Signal Status Bar */}
-      <AnimatePresence>
-        {(outboxCount > 0 || !isOnline) && (
-          <motion.div 
-            initial={{ y: -40 }}
-            animate={{ y: 0 }}
-            exit={{ y: -40 }}
-            className={cn(
-              "fixed top-0 left-0 right-0 z-[600] py-1 px-4 flex items-center justify-center gap-6 border-b shadow-lg transition-colors duration-500",
-              isOnline ? "bg-green-500 border-green-600 text-black" : "bg-red-500 border-red-600 text-black"
-            )}
-            style={{ 
-              paddingTop: 'max(4px, env(safe-area-inset-top))',
-              height: '32px'
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <Activity className={cn("w-3 h-3", !isOnline && "animate-pulse")} />
-              <span className="text-[8px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
-                SIGNAL::{isOnline ? 'STABLE' : 'LOST'}
-              </span>
-            </div>
-            {outboxCount > 0 && (
-              <div className="flex items-center gap-2 border-l border-black/20 pl-4">
-                <Terminal className="w-3 h-3 animate-pulse" />
-                <span className="text-[8px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
-                  PENDING_BUFFERS::{outboxCount}
-                </span>
-                <button 
-                  onClick={() => ghostPeer.init()}
-                  className="ml-2 bg-black/10 hover:bg-black/20 px-2 py-0.5 rounded text-[7px] border border-black/10 transition-all active:scale-95 pointer-events-auto"
-                >
-                  RETRY_SYNC
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div 
         className="bg-[var(--bg-app)] text-[var(--fg-app)] font-sans selection:bg-[var(--accent)] selection:text-[#050505] overflow-hidden w-full fixed inset-0 flex flex-col"
         style={{ 
           height: viewportHeight,
-          transform: `translateY(${viewportTop}px)`,
-          paddingTop: (outboxCount > 0 || !isOnline) ? '32px' : '0px'
+          transform: `translateY(${viewportTop}px)`
         }}
       >
+        {/* Signal Status Bar - Integrated into Flex Flow */}
+        <AnimatePresence>
+          {(outboxCount > 0 || peerStatus !== 'connected' || !isOnline) && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 32, opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className={cn(
+                "w-full z-[600] py-1 px-4 flex items-center justify-center gap-6 border-b transition-colors duration-500 overflow-hidden shrink-0",
+                isOnline && peerStatus === 'connected' ? "bg-green-500 border-green-600 text-black shadow-[0_2px_10px_rgba(34,197,94,0.3)]" : 
+                isOnline && peerStatus === 'connecting' ? "bg-amber-400 border-amber-500 text-black" :
+                "bg-red-500 border-red-600 text-white shadow-[0_2px_10px_rgba(239,68,68,0.2)]"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Activity className={cn("w-3 h-3", peerStatus !== 'connected' && "animate-pulse")} />
+                <span className="text-[8px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
+                  SIGNAL::{!isOnline ? 'OFFLINE' : peerStatus.toUpperCase()}
+                </span>
+              </div>
+              {outboxCount > 0 && (
+                <div className="flex items-center gap-2 border-l border-black/20 pl-4">
+                  <Terminal className="w-3 h-3 animate-pulse" />
+                  <span className="text-[8px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
+                    OUTBOX::{outboxCount}
+                  </span>
+                  <button 
+                    onClick={() => ghostPeer.init()}
+                    className="ml-2 bg-black/20 hover:bg-black/30 px-2 py-0.5 rounded text-[7px] border border-black/10 transition-all active:scale-95 pointer-events-auto font-bold"
+                  >
+                    SYNC_NOW
+                  </button>
+                </div>
+              )}
+              {isOnline && peerStatus === 'disconnected' && (
+                <button 
+                  onClick={() => ghostPeer.init()}
+                  className="bg-black/20 hover:bg-black/30 px-2 py-0.5 rounded text-[7px] border border-black/10 transition-all active:scale-95 pointer-events-auto font-bold uppercase"
+                >
+                  Reconnect_Kernel
+                </button>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex flex-grow w-full relative h-full flex-row overflow-hidden">
           {/* Sidebar */}
           <div className={cn(

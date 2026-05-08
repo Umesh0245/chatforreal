@@ -16,7 +16,13 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
   const readerId = "reader-container";
 
   useEffect(() => {
+    let isMounted = true;
+    
     const initializeScanner = async () => {
+      // Add a small delay to ensure the container is stable and in DOM
+      await new Promise(r => setTimeout(r, 500));
+      if (!isMounted) return;
+
       try {
         const qrCode = new Html5Qrcode(readerId);
         qrCodeRef.current = qrCode;
@@ -24,7 +30,7 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
         // Try to find the back camera first
         const devices = await Html5Qrcode.getCameras();
         if (!devices || devices.length === 0) {
-          throw new Error("No camera modules detected.");
+          throw new Error("No camera modules detected on this hardware.");
         }
 
         setCameraPermission(true);
@@ -35,16 +41,29 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
         };
 
-        // Prefer the back camera (environment)
-        await qrCode.start(
-          { facingMode: "environment" },
-          config,
-          (decodedText) => {
-            onScan(decodedText);
-            stopScanner();
-          },
-          () => {} // Ignore scan failures
-        );
+        // Try environment camera first, then user, then any
+        try {
+          await qrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+              onScan(decodedText);
+              stopScanner();
+            },
+            () => {} 
+          );
+        } catch (e) {
+          console.warn("Failed to start environment camera, trying user camera...", e);
+          await qrCode.start(
+            { facingMode: "user" },
+            config,
+            (decodedText) => {
+              onScan(decodedText);
+              stopScanner();
+            },
+            () => {}
+          );
+        }
         
         setIsInitializing(false);
       } catch (err: any) {
@@ -58,6 +77,7 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
     initializeScanner();
 
     return () => {
+      isMounted = false;
       stopScanner();
     };
   }, [onScan]);

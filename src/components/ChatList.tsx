@@ -44,15 +44,15 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId, onOpenScan
         className="p-6 border-b border-[var(--border-color)] bg-[var(--bg-app)]/80 backdrop-blur-xl sticky top-0 z-50 shrink-0"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-lg font-mono italic flex items-center gap-2 text-[var(--accent)] tracking-tighter">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <h1 className="text-lg font-mono italic flex items-center gap-2 text-[var(--accent)] tracking-tighter shrink-0">
             <Cpu className="w-5 h-5" /> BRIDGE<span className="not-italic text-[var(--fg-app)] opacity-30">[KRNL]</span>
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
             <button 
               onClick={requestNotif}
               className={cn(
-                "p-2 border border-[var(--border-color)] rounded-xl transition-all active:scale-95",
+                "p-2 border border-[var(--border-color)] rounded-xl transition-all active:scale-95 shrink-0",
                 notifPermission === 'granted' ? "text-[var(--accent)] border-[var(--accent)]/30" : "text-[var(--fg-muted)]"
               )}
               aria-label="Toggle notifications"
@@ -61,23 +61,23 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId, onOpenScan
             </button>
             <button 
               onClick={onOpenSettings}
-              className="p-2 border border-[var(--border-color)] text-[var(--fg-app)] rounded-xl hover:bg-[var(--bg-input)] transition-all active:scale-95"
+              className="p-2 border border-[var(--border-color)] text-[var(--fg-app)] rounded-xl hover:bg-[var(--bg-input)] transition-all active:scale-95 shrink-0"
               aria-label="Toggle settings"
             >
               <SettingsIcon className="w-4 h-4" />
             </button>
             <button 
               onClick={onOpenScanner}
-              className="p-2 border border-[var(--border-color)] text-[var(--fg-app)] rounded-xl hover:bg-[var(--bg-input)] transition-all active:scale-95"
+              className="p-2 border border-[var(--border-color)] text-[var(--fg-app)] rounded-xl hover:bg-[var(--bg-input)] transition-all active:scale-95 shrink-0"
               aria-label="Scan QR code"
             >
               <Scan className="w-4 h-4" />
             </button>
             <button 
               onClick={() => onSelectChat('new')}
-              className="p-2 bg-[var(--accent)] text-[#050505] rounded-xl hover:bg-opacity-90 transition-all shadow-lg shadow-[var(--accent)]/10 active:scale-95"
+              className="p-2 bg-[var(--accent)] text-[#050505] rounded-xl hover:bg-opacity-90 transition-all shadow-lg shadow-[var(--accent)]/20 active:scale-95 shrink-0"
             >
-              <Plus className="w-5 h-5 flex-shrink-0" />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
         </div>
