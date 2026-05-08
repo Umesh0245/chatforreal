@@ -162,11 +162,11 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
         </button>
         <div className="flex-grow">
           <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#F27D26]">
-            DATA_STREAM::{chat.partnerName}
+            K-BRIDGE::{chat.partnerName}
           </h2>
           <div className="flex items-center gap-1">
             <Cpu className="w-3 h-3 text-[#F27D26]/50 animate-pulse" />
-            <span className="text-[9px] font-mono text-[#8E9299]/50 tracking-widest">BRIDGE_ACTIVE_P2P</span>
+            <span className="text-[9px] font-mono text-[#8E9299]/50 tracking-widest">SIGNAL_STABLE_P2P</span>
           </div>
         </div>
         
@@ -238,7 +238,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
         )}
       </AnimatePresence>
 
-      <div className="flex-grow overflow-y-auto px-4 py-6 space-y-4 custom-scrollbar">
+      <div className="flex-grow overflow-y-auto px-4 py-6 space-y-4 custom-scrollbar overscroll-contain">
         {filteredMessages.map((msg, idx) => {
           const isMe = msg.senderUid === currentPeerId;
           const showTime = idx === 0 || msg.timestamp - messages[idx-1].timestamp > 15 * 60 * 1000;
@@ -247,19 +247,19 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             <div key={idx} className="space-y-1">
               {showTime && (
                 <div className="flex justify-center my-4">
-                  <span className="text-[10px] font-mono text-[#8E9299] bg-[#141414] px-2 py-0.5 rounded uppercase tracking-tighter">
-                    FRAME_TS: {formatDate(msg.timestamp)}
+                  <span className="text-[10px] font-mono text-[#8E9299] bg-[#141414] px-2 py-1 rounded-sm uppercase tracking-[0.2em]">
+                    FRAME_TS::{formatDate(msg.timestamp)}
                   </span>
                 </div>
               )}
               <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
                 <div className={cn(
-                  "max-w-[95%] px-3 py-1.5 font-mono text-[11px] leading-relaxed break-words border-l-2",
+                  "max-w-[95%] px-3 py-2 font-mono text-[11px] leading-relaxed break-words border-l-2",
                   isMe ? "bg-[#141414] text-[#F27D26] border-[#F27D26]/40" : "bg-[#0A0A0A] text-[#8E9299] border-[#8E9299]/20"
                 )}>
-                  <div className="flex items-center gap-2 mb-1.5 opacity-30 text-[9px] uppercase tracking-widest border-b border-white/5 pb-1">
-                    <span>{isMe ? 'Local_Host' : 'Remote_Node'}</span>
-                    <span className="ml-auto">{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                  <div className="flex items-center gap-2 mb-2 opacity-30 text-[8px] uppercase tracking-widest border-b border-white/5 pb-1">
+                    <span>{isMe ? 'Local_Node' : 'Remote_Peer'}</span>
+                    <span className="ml-auto opacity-50">{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                   </div>
                   {msg.encryptedText}
                 </div>
@@ -267,38 +267,49 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             </div>
           );
         })}
-        <div ref={scrollRef} />
+        <div ref={scrollRef} className="h-4" />
       </div>
 
-      <footer className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-[#141414] bg-[#050505] safe-area-bottom">
-        {chat.isBlocked ? (
-          <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-3 flex items-center justify-center gap-2 text-red-500 text-[10px] font-mono uppercase tracking-widest">
-            <ShieldAlert className="w-4 h-4" /> BUFFER_REJECTED
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <input 
-              type="text"
-              inputMode="text"
-              placeholder="APPEND DATA TO STREAM..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              onFocus={() => {
-                setTimeout(() => {
-                  scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-                }, 300);
-              }}
-              className="flex-grow bg-[#151619] border border-[#141414] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#F27D26] focus:ring-1 focus:ring-[#F27D26]/20 transition-all font-mono"
-            />
-            <button 
-              onClick={handleSend}
-              className="p-3 bg-[#F27D26] text-[#050505] rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#F27D26]/10"
-            >
-              <Terminal className="w-5 h-5" />
-            </button>
-          </div>
-        )}
+      <footer className="p-4 border-t border-[#141414] bg-[#050505] relative z-20">
+        <div className="max-w-4xl mx-auto">
+          {chat.isBlocked ? (
+            <div className="bg-red-900/10 border border-red-900/30 rounded-lg p-3 flex items-center justify-center gap-2 text-red-500/70 text-[10px] font-mono uppercase tracking-[0.3em]">
+              <ShieldAlert className="w-4 h-4 opacity-50" /> KERNEL_REJECTED
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-[#151619] rounded-xl border border-[#141414] p-1.5 focus-within:border-[#F27D26]/50 transition-all">
+              <input 
+                type="text"
+                inputMode="text"
+                enterKeyHint="send"
+                placeholder="APPEND_FRAME_DATA..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                onFocus={() => {
+                  // Wait for viewport to settle
+                  setTimeout(() => {
+                    scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                  }, 400);
+                }}
+                className="flex-grow bg-transparent border-none py-2.5 px-3 text-sm focus:outline-none transition-all font-mono placeholder:opacity-30"
+              />
+              <button 
+                onClick={handleSend}
+                disabled={!inputText.trim()}
+                className={cn(
+                  "p-3 rounded-lg transition-all shadow-lg",
+                  inputText.trim() 
+                    ? "bg-[#F27D26] text-[#050505] shadow-[#F27D26]/10" 
+                    : "bg-[#141414] text-[#8E9299]/30"
+                )}
+              >
+                <Terminal className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+          <div className="h-[env(safe-area-inset-bottom)]" />
+        </div>
       </footer>
     </div>
   );

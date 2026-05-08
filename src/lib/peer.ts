@@ -8,7 +8,11 @@ class GhostPeer {
   onMessage: ((chatId: string, text: string) => void) | null = null;
   onCall: ((stream: MediaStream) => void) | null = null;
 
-  init(id?: string) {
+  init(id?: string): Promise<string> {
+    if (this.peer) {
+      this.peer.destroy();
+    }
+
     this.peer = new Peer(id, {
       debug: 1
     });
@@ -16,9 +20,8 @@ class GhostPeer {
     this.peer.on('error', (err: any) => {
       console.error('PeerJS Error:', err);
       if (err.type === 'unavailable-id') {
-        console.warn('Peer ID taken, retrying with fresh identity...');
+        console.warn('ID collision detected. Nuking instance and retrying...');
         localStorage.removeItem('ghost_peer_id');
-        // Re-initialize without an ID to let server generate one
         this.init();
       }
     });
@@ -28,12 +31,11 @@ class GhostPeer {
     });
 
     this.peer.on('call', (call) => {
-      // Auto-answer logic or UI prompt
       this.onCallIncoming?.(call);
     });
 
     return new Promise((resolve) => {
-      this.peer?.on('open', (id) => resolve(id));
+      this.peer?.on('open', (newId) => resolve(newId));
     });
   }
 
@@ -41,16 +43,15 @@ class GhostPeer {
 
   setupConnection(conn: DataConnection) {
     conn.on('open', () => {
-      console.log('Connection established with:', conn.peer);
+      console.log('Bridge established:', conn.peer);
       this.connections.set(conn.peer, conn);
     });
 
     conn.on('data', async (data: any) => {
-      console.log('Received data:', data);
+      console.log('Incoming segment:', data);
       const { type, payload, rid, senderName } = data;
 
       if (type === 'handshake') {
-        // Receiver tells initiator who they are and which room they are joining
         const chat = await db.conversations.get(rid);
         if (chat && chat.partnerUid === 'waiting') {
           await db.conversations.update(rid, {
@@ -81,10 +82,9 @@ class GhostPeer {
 
           this.onMessage?.(rid, decrypted);
 
-          // Show browser notification if permitted
           if (Notification.permission === 'granted') {
-            new Notification(`DIAG_UPDATE: ${chat.partnerName}`, {
-              body: "NEW_DATA_FRAME_RECEIVED",
+            new Notification(`FLUX_KERNEL: ${chat.partnerName}`, {
+              body: "DATA_FRAME_APPENDED",
               icon: '/manifest.json'
             });
           }

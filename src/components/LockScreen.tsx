@@ -29,17 +29,23 @@ export function LockScreen({ onUnlock }: LockScreenProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center p-8 select-none">
+    <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center p-8 select-none overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden opacity-5 pointer-events-none">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#F27D26] to-transparent animate-scan" />
+      </div>
+      
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12"
       >
-        <div className="w-16 h-16 bg-[#F27D26]/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#F27D26]/10">
-          <ShieldCheck className="w-8 h-8 text-[#F27D26]" />
+        <div className="w-20 h-20 bg-[#F27D26]/5 rounded-sm flex items-center justify-center mx-auto mb-6 border border-[#F27D26]/10 transform rotate-45">
+          <div className="transform -rotate-45">
+            <Cpu className="w-10 h-10 text-[#F27D26] animate-pulse" />
+          </div>
         </div>
-        <h2 className="text-xs font-mono uppercase tracking-[0.4em] text-[#E4E3E0] opacity-50">Pulse_Monitor_v4</h2>
-        <h1 className="text-xl font-mono uppercase tracking-widest mt-2">Access_Required</h1>
+        <h2 className="text-xs font-mono uppercase tracking-[0.6em] text-[#F27D26] opacity-40 mb-1">Bridge_Kernel_v4</h2>
+        <h1 className="text-xl font-mono uppercase tracking-widest text-[#E4E3E0]">Auth_Required</h1>
       </motion.div>
 
       <div className="flex gap-4 mb-12">

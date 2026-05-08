@@ -1,14 +1,14 @@
 {
-  "name": "Flux Buffer",
+  "name": "Flux Bridge",
   "short_name": "Flux",
-  "description": "P2P data buffer management.",
+  "description": "Secure P2P data bridge kernel.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050505",
   "theme_color": "#F27D26",
   "icons": [
     {
-      "src": "/pulse_monitor_icon.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/2103/2103633.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

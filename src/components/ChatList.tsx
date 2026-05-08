@@ -35,7 +35,7 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId }: ChatList
       <header className="p-6 border-b border-[#141414]">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-mono italic flex items-center gap-2 text-[#F27D26]">
-            <Cpu className="w-5 h-5" /> FLUX[BUFF]
+            <Cpu className="w-5 h-5" /> BRIDGE[INIT]
           </h1>
           <button 
             onClick={() => onSelectChat('new')}

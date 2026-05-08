@@ -1,6 +1,6 @@
 {
-  "name": "Flux Buffer",
-  "description": "High-performance P2P data streaming and buffer management kernel. Monitor node health and signal stability.",
+  "name": "Flux Bridge",
+  "description": "Secure P2P data kernel and buffer management system. Real-time node diagnostics and signal stabilization.",
   "requestFramePermissions": [
     "camera",
     "notifications",

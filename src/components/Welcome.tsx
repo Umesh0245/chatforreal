@@ -97,9 +97,9 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
                 <Cpu className="w-8 h-8 text-[#F27D26]" />
               </div>
             </div>
-            <h2 className="text-2xl font-mono uppercase tracking-[0.4em] mb-2 text-[#E4E3E0]">FLUX_NODE[v4.0]</h2>
+            <h2 className="text-2xl font-mono uppercase tracking-[0.4em] mb-2 text-[#E4E3E0]">BRIDGE_NODE[v4.0]</h2>
             <p className="text-[#8E9299] text-[10px] font-mono mb-10 opacity-40 uppercase leading-relaxed text-center tracking-widest">
-              SECURE_P2P_TUNNEL_ACTIVE // BUFFER_PURGE: 288k_SEC
+              SECURE_P2P_BRIDGE_ACTIVE // BUFFER_AUTO_WIPE
             </p>
             
             <div className="space-y-4">
