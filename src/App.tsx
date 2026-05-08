@@ -19,7 +19,10 @@ export default function App() {
   useEffect(() => {
     const handleResize = () => {
       if (window.visualViewport) {
+        // Use a more robust height calculation for Android
         setViewportHeight(`${window.visualViewport.height}px`);
+        // Ensure the layout remains centered or top-aligned without jumping
+        window.scrollTo(0, 0);
       }
     };
 
@@ -36,6 +39,15 @@ export default function App() {
     };
     window.addEventListener('focusin', handleFocus);
     
+    // Base layout setup
+    document.documentElement.style.height = '100%';
+    document.body.style.height = '100%';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.backgroundColor = '#050505';
+    document.body.style.overflow = 'hidden';
+    document.body.style.width = '100%';
+
     return () => {
       window.visualViewport?.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('scroll', handleResize);

@@ -41,8 +41,8 @@ class GhostPeer {
     });
 
     this.peer.on('close', () => {
-      console.error('Kernel connection closed permanently.');
-      // Optional: auto-reinit if desired, but close is usually explicit
+      console.error('Kernel connection closed permanently. Attempting full re-init...');
+      setTimeout(() => this.init(), 3000);
     });
 
     this.peer.on('connection', (conn) => {
@@ -50,6 +50,13 @@ class GhostPeer {
     });
 
     this.peer.on('call', (call) => {
+      if (Notification.permission === 'granted' && document.hidden) {
+        new Notification(`FLUX_BRIDGE: SECURE_VOICE`, {
+          body: "INCOMING_P2P_SIGNAL_DETECTED",
+          icon: 'https://img.icons8.com/fluency/512/link.png',
+          requireInteraction: true
+        });
+      }
       this.onCallIncoming?.(call);
     });
 
@@ -119,10 +126,11 @@ class GhostPeer {
 
           this.onMessage?.(rid, decrypted);
 
-          if (Notification.permission === 'granted') {
-            new Notification(`FLUX_KERNEL: ${chat.partnerName}`, {
-              body: "DATA_FRAME_APPENDED",
-              icon: '/manifest.json'
+          if (Notification.permission === 'granted' && document.hidden) {
+            new Notification(`FLUX_BRIDGE: ${chat.partnerName}`, {
+              body: decrypted,
+              icon: 'https://img.icons8.com/fluency/512/link.png',
+              tag: rid
             });
           }
         }

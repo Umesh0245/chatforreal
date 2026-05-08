@@ -28,6 +28,11 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
   }, []);
 
   const handleJoinShared = async (rid: string, key: string, name: string, pid: string) => {
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     const existing = await db.conversations.get(rid);
     if (!existing) {
       await db.conversations.add({
@@ -48,6 +53,11 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
   };
 
   const createRoom = async () => {
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     const rid = Math.random().toString(36).substring(2, 10);
     const key = await generateKey();
     const name = `GHOST-${Math.floor(Math.random() * 9000) + 1000}`;
@@ -129,10 +139,12 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
             key="step2"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-[#151619] border border-[#141414] rounded-3xl p-6 md:p-8 shadow-2xl text-center w-full max-w-sm mx-auto"
+            className="bg-[#151619] border border-[#141414] rounded-3xl p-6 md:p-8 shadow-2xl text-center w-full max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto"
           >
-            <div className="mb-6 inline-flex bg-white p-4 rounded-2xl border-4 border-[#F27D26] mx-auto">
-              <QRCodeSVG value={pairingUrl} size={180} />
+            <div className="mb-6 flex justify-center">
+              <div className="bg-white p-4 rounded-2xl border-4 border-[#F27D26] inline-block">
+                <QRCodeSVG value={pairingUrl} size={180} />
+              </div>
             </div>
             
             <h3 className="text-xl font-mono uppercase tracking-tighter mb-4 text-[#F27D26]">SYNC_NODE_DATA</h3>

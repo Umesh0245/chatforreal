@@ -50,6 +50,11 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     const interval = setInterval(loadData, 1000);
 
     const ensureConnection = async () => {
+      // Request notification permission if not yet asked
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+      
       checkPeer();
       const c = await db.conversations.get(chatId);
       if (c && c.partnerUid && c.partnerUid !== 'waiting') {
