@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Terminal, ArrowLeft, MoreVertical, ShieldAlert, Trash2, Ban, Search, ShieldCheck, Cpu, PhoneOff, Activity } from 'lucide-react';
+import { Terminal, ArrowLeft, MoreVertical, ShieldAlert, Trash2, Ban, Search, ShieldCheck, Cpu, PhoneOff, Activity, Phone, Mic, MicOff } from 'lucide-react';
 import { db, type Message, type Conversation } from '../lib/db';
 import { encryptMessage } from '../lib/crypto';
 import { ghostPeer } from '../lib/peer';
@@ -20,13 +20,17 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
   const [showMenu, setShowMenu] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameText, setRenameText] = useState('');
   
   // Call State
   const [isCalling, setIsCalling] = useState(false);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [activeCall, setActiveCall] = useState<MediaConnection | null>(null);
+  const [incomingCall, setIncomingCall] = useState<MediaConnection | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
   const [peerStatus, setPeerStatus] = useState<'stable' | 'lost'>('stable');
 
   useEffect(() => {
@@ -79,15 +83,12 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
 
     // Incoming Call Listener
     ghostPeer.onCallIncoming = (call) => {
-      if (confirm(`INCOMING SECURE CALL FROM ${chat?.partnerName || 'PEER'}. ACCEPT?`)) {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-          call.answer(stream);
-          call.on('stream', (rStream) => {
-            setRemoteStream(rStream);
-            setIsCalling(true);
-            if (remoteAudioRef.current) remoteAudioRef.current.srcObject = rStream;
-          });
-          setActiveCall(call);
+      setIncomingCall(call);
+      
+      if (Notification.permission === 'granted' && document.hidden) {
+        new Notification(`INCOMING_CALL: ${chat?.partnerName || 'PEER'}`, {
+          body: "SECURE_VOICE_SIGNAL_INCOMING",
+          icon: 'https://img.icons8.com/fluency/512/link.png'
         });
       }
     };
@@ -143,6 +144,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream;
       const call = await ghostPeer.peer?.call(chat.partnerUid, stream);
       
       if (call) {
@@ -152,17 +154,56 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
           setRemoteStream(rStream);
           if (remoteAudioRef.current) remoteAudioRef.current.srcObject = rStream;
         });
+        call.on('close', endCall);
       }
     } catch (err) {
       console.error("Call failed", err);
     }
   };
 
+  const acceptCall = async () => {
+    if (!incomingCall) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream;
+      incomingCall.answer(stream);
+      incomingCall.on('stream', (rStream) => {
+        setRemoteStream(rStream);
+        setIsCalling(true);
+        if (remoteAudioRef.current) remoteAudioRef.current.srcObject = rStream;
+      });
+      incomingCall.on('close', endCall);
+      setActiveCall(incomingCall);
+      setIncomingCall(null);
+    } catch (err) {
+      console.error("Accept failed", err);
+      setIncomingCall(null);
+    }
+  };
+
+  const rejectCall = () => {
+    incomingCall?.close();
+    setIncomingCall(null);
+  };
+
   const endCall = () => {
     activeCall?.close();
+    localStreamRef.current?.getTracks().forEach(t => t.stop());
+    localStreamRef.current = null;
     setRemoteStream(null);
     setIsCalling(false);
     setActiveCall(null);
+    setIsMuted(false);
+  };
+
+  const toggleMute = () => {
+    if (localStreamRef.current) {
+      const audioTrack = localStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
+      }
+    }
   };
 
   const toggleBlock = async () => {
@@ -178,6 +219,16 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     await db.messages.where('conversationId').equals(chatId).delete();
     await db.conversations.delete(chatId);
     onBack();
+  };
+
+  const handleRename = async () => {
+    if (!renameText.trim() || !chat) {
+      setIsRenaming(false);
+      return;
+    }
+    await db.conversations.update(chatId, { partnerName: renameText.trim() });
+    setChat({ ...chat, partnerName: renameText.trim() });
+    setIsRenaming(false);
   };
 
   const filteredMessages = messages.filter(m => 
@@ -196,9 +247,27 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-grow min-w-0">
-          <h2 className="text-[10px] font-mono uppercase tracking-[0.1em] text-[#F27D26] truncate">
-            {chat.partnerName}
-          </h2>
+          {isRenaming ? (
+            <input 
+              autoFocus
+              type="text"
+              value={renameText}
+              onChange={(e) => setRenameText(e.target.value.toUpperCase())}
+              onBlur={handleRename}
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+              className="bg-[#151619] border-b border-[#F27D26] text-[10px] font-mono text-[#F27D26] focus:outline-none w-full"
+            />
+          ) : (
+            <h2 
+              onClick={() => {
+                setRenameText(chat.partnerName);
+                setIsRenaming(true);
+              }}
+              className="text-[10px] font-mono uppercase tracking-[0.1em] text-[#F27D26] truncate cursor-pointer hover:opacity-80"
+            >
+              {chat.partnerName}
+            </h2>
+          )}
           <div className="flex items-center gap-1.5 overflow-hidden">
             <Cpu className={cn("w-2.5 h-2.5 text-[#F27D26]/50 animate-pulse shrink-0", peerStatus === 'lost' && "text-red-500 animate-none")} />
             <span className={cn("text-[8px] font-mono text-[#8E9299]/50 tracking-widest truncate", peerStatus === 'lost' && "text-red-500")}>
@@ -211,9 +280,10 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
           {!isCalling ? (
             <button 
               onClick={startVoiceCall}
-              className="p-2 hover:bg-[#141414] rounded-full text-green-500/50"
+              disabled={chat.partnerUid === 'waiting' || peerStatus === 'lost'}
+              className="p-2 hover:bg-[#141414] rounded-full text-green-500/50 disabled:opacity-20"
             >
-              <Cpu className="w-5 h-5" />
+              <Phone className="w-5 h-5" />
             </button>
           ) : (
             <button 
@@ -249,11 +319,70 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
       {/* Hidden Audio Element for Voice Calls */}
       <audio ref={remoteAudioRef} autoPlay />
 
+      {/* Active Call UI Overlay */}
       {isCalling && (
-        <div className="bg-[#F27D26] text-[#050505] p-2 text-center text-[10px] font-mono uppercase font-bold tracking-widest animate-pulse">
-          VOICE_STREAM_ACTIVE
-        </div>
+        <motion.div 
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-[#F27D26] text-[#050505] p-3 flex items-center justify-between z-40 shadow-2xl"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-[#050505] rounded-full animate-ping" />
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em]">VOICE_LINK_ESTABLISHED</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={toggleMute}
+              className="p-2 px-4 bg-[#050505]/10 rounded-lg hover:bg-[#050505]/20 transition-all font-mono text-[10px] font-bold flex items-center gap-2"
+            >
+              {isMuted ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+              {isMuted ? "UNMUTE" : "MUTE"}
+            </button>
+            <button 
+              onClick={endCall}
+              className="p-2 px-4 bg-[#050505] text-[#F27D26] rounded-lg hover:bg-black transition-all font-mono text-[10px] font-bold"
+            >
+              END_LINK
+            </button>
+          </div>
+        </motion.div>
       )}
+
+      {/* Incoming Call Overlay */}
+      <AnimatePresence>
+        {incomingCall && (
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#050505]/95 backdrop-blur-xl"
+          >
+            <div className="bg-[#151619] border-2 border-[#F27D26] rounded-[2rem] p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(242,125,38,0.2)]">
+              <div className="w-20 h-20 bg-[#F27D26]/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                <div className="absolute inset-0 bg-[#F27D26] rounded-full animate-ping opacity-20" />
+                <Phone className="w-8 h-8 text-[#F27D26]" />
+              </div>
+              <h2 className="text-[#E4E3E0] font-mono text-xl mb-2 tracking-widest">{chat.partnerName}</h2>
+              <p className="text-[#8E9299] font-mono text-[10px] mb-10 opacity-50">INCOMING_SECURE_SIGNAL...</p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={rejectCall}
+                  className="bg-[#141414] text-red-500 border border-red-500/20 py-4 rounded-2xl font-mono text-xs hover:bg-red-500/10 active:scale-95 transition-all"
+                >
+                  REJECT
+                </button>
+                <button 
+                  onClick={acceptCall}
+                  className="bg-[#F27D26] text-[#050505] py-4 rounded-2xl font-mono text-xs font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#F27D26]/20"
+                >
+                  ACCEPT
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isSearching && (

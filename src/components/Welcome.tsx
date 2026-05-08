@@ -14,6 +14,7 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
   const [pairingUrl, setPairingUrl] = useState('');
   const [step, setStep] = useState(1);
   const [newRoomId, setNewId] = useState('');
+  const [customName, setCustomName] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -60,7 +61,7 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
 
     const rid = Math.random().toString(36).substring(2, 10);
     const key = await generateKey();
-    const name = `GHOST-${Math.floor(Math.random() * 9000) + 1000}`;
+    const name = customName.trim() || `GHOST-${Math.floor(Math.random() * 9000) + 1000}`;
     
     const url = new URL(window.location.href);
     url.searchParams.set('rid', rid);
@@ -113,6 +114,19 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
             </p>
             
             <div className="space-y-4">
+              <div className="relative">
+                <input 
+                  type="text"
+                  placeholder="BUFFER_NAME (OPTIONAL)"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value.toUpperCase())}
+                  className="w-full bg-[#050505] border border-[#141414] rounded-xl py-4 px-4 text-xs font-mono text-[#F27D26] focus:outline-none focus:border-[#F27D26]/50 transition-all placeholder:text-[#8E9299]/20"
+                />
+                {!customName && (
+                  <Terminal className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E9299]/20" />
+                )}
+              </div>
+
               <button 
                 onClick={createRoom}
                 className="w-full bg-[#F27D26] text-[#050505] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#F27D26]/10 font-bold"
