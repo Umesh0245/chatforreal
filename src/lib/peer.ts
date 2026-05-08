@@ -8,48 +8,65 @@ class GhostPeer {
   onMessage: ((chatId: string, text: string) => void) | null = null;
   onCall: ((stream: MediaStream) => void) | null = null;
 
+  private initPromise: Promise<string> | null = null;
+
   init(id?: string): Promise<string> {
-    if (this.peer) {
-      this.peer.destroy();
-    }
+    if (this.initPromise && this.peer?.open) return this.initPromise;
 
-    this.peer = new Peer(id, {
-      debug: 1
-    });
-
-    this.peer.on('error', (err: any) => {
-      console.error('PeerJS Error:', err);
-      if (err.type === 'unavailable-id') {
-        console.warn('ID collision detected. Nuking instance and retrying...');
-        localStorage.removeItem('ghost_peer_id');
-        this.init();
+    this.initPromise = new Promise((resolve, reject) => {
+      if (this.peer) {
+        this.peer.destroy();
       }
-      
-      // Handle server connection errors
-      if (err.type === 'server-error' || err.type === 'network') {
-        console.warn('Network or server error. Retrying in 5s...');
-        setTimeout(() => {
-          if (!this.peer?.open) this.init(id);
-        }, 5000);
-      }
+
+      const peerId = id || localStorage.getItem('ghost_peer_id') || undefined;
+
+      this.peer = new Peer(peerId, {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      const timeout = setTimeout(() => {
+        if (this.peer && !this.peer.open) {
+          console.warn('Peer initialization timed out. Proceeding anyway.');
+          resolve(this.peer.id || 'offline_node');
+        }
+      }, 10000);
+
+      this.peer.on('open', (newId) => {
+        clearTimeout(timeout);
+        console.log('Kernel node initialized:', newId);
+        resolve(newId);
+      });
+
+      this.peer.on('error', (err: any) => {
+        console.error('PeerJS Error:', err);
+        if (err.type === 'unavailable-id') {
+          localStorage.removeItem('ghost_peer_id');
+          this.init();
+        }
+      });
+
+      this.peer.on('disconnected', () => {
+        console.warn('Signal lost. Attempting reconnection...');
+        this.peer?.reconnect();
+      });
+
+      this.peer.on('close', () => {
+        console.warn('Peer connection closed.');
+        this.initPromise = null;
+      });
     });
 
-    this.peer.on('disconnected', () => {
-      console.warn('K-BRIDGE SIGNAL LOST. Attempting re-stabilization...');
-      // Try to reconnect to PeerServer
-      this.peer?.reconnect();
-    });
-
-    this.peer.on('close', () => {
-      console.error('Kernel connection closed permanently. Attempting full re-init...');
-      setTimeout(() => this.init(), 3000);
-    });
-
-    this.peer.on('connection', (conn) => {
+    this.peer?.on('connection', (conn) => {
       this.setupConnection(conn);
     });
 
-    this.peer.on('call', (call) => {
+    this.peer?.on('call', (call) => {
       if (Notification.permission === 'granted' && document.hidden) {
         new Notification(`FLUX_BRIDGE: SECURE_VOICE`, {
           body: "INCOMING_P2P_SIGNAL_DETECTED",

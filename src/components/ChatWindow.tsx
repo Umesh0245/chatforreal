@@ -242,7 +242,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
       <header 
         className="px-4 pb-3 border-b border-[#141414] flex items-center gap-3 bg-[#050505]/95 backdrop-blur-sm sticky top-0 z-30 shadow-sm shrink-0"
         style={{ 
-          paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+          paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
           paddingLeft: 'max(1rem, env(safe-area-inset-left))',
           paddingRight: 'max(1rem, env(safe-area-inset-right))'
         }}

@@ -62,7 +62,7 @@ export default function App() {
       // Add a timeout to init so we don't block the UI forever
       const initPromise = ghostPeer.init(savedId);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('init_timeout')), 5000)
+        setTimeout(() => reject(new Error('init_timeout')), 10000)
       );
 
       try {

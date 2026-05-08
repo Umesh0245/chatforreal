@@ -34,7 +34,7 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId }: ChatList
     <div className="flex flex-col h-full bg-[#050505]">
       <header 
         className="p-6 border-b border-[#141414] bg-[#050505]/50 backdrop-blur-md"
-        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+        style={{ paddingTop: 'max(2rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-mono italic flex items-center gap-2 text-[#F27D26]">
