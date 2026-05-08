@@ -78,8 +78,8 @@ export default function App() {
       </AnimatePresence>
 
       <div 
-        style={{ height: viewportHeight, touchAction: 'none' }}
-        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed inset-0"
+        style={{ height: viewportHeight }}
+        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed top-0 left-0 right-0"
       >
         {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
         <div className={cn(

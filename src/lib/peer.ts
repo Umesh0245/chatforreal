@@ -24,6 +24,25 @@ class GhostPeer {
         localStorage.removeItem('ghost_peer_id');
         this.init();
       }
+      
+      // Handle server connection errors
+      if (err.type === 'server-error' || err.type === 'network') {
+        console.warn('Network or server error. Retrying in 5s...');
+        setTimeout(() => {
+          if (!this.peer?.open) this.init(id);
+        }, 5000);
+      }
+    });
+
+    this.peer.on('disconnected', () => {
+      console.warn('K-BRIDGE SIGNAL LOST. Attempting re-stabilization...');
+      // Try to reconnect to PeerServer
+      this.peer?.reconnect();
+    });
+
+    this.peer.on('close', () => {
+      console.error('Kernel connection closed permanently.');
+      // Optional: auto-reinit if desired, but close is usually explicit
     });
 
     this.peer.on('connection', (conn) => {

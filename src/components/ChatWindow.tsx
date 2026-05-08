@@ -27,11 +27,18 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [activeCall, setActiveCall] = useState<MediaConnection | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const [peerStatus, setPeerStatus] = useState<'stable' | 'lost'>('stable');
 
   useEffect(() => {
     if (!chatId) return;
 
+    const checkPeer = () => {
+      const isLost = !ghostPeer.peer || ghostPeer.peer.disconnected || ghostPeer.peer.destroyed;
+      setPeerStatus(isLost ? 'lost' : 'stable');
+    };
+
     const loadData = async () => {
+      checkPeer();
       const c = await db.conversations.get(chatId);
       if (c) setChat(c);
       
@@ -40,11 +47,11 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     };
 
     loadData();
-    // Use a listener instead of tight polling if possible, but keep for fallback
     const interval = setInterval(loadData, 1000);
 
     // Ensure peer is connected if we have a partner ID
     const ensureConnection = async () => {
+      checkPeer();
       const c = await db.conversations.get(chatId);
       if (c && c.partnerUid && c.partnerUid !== 'waiting' && !ghostPeer.connections.has(c.partnerUid)) {
         ghostPeer.connectToPeer(c.partnerUid, chatId);
@@ -165,8 +172,10 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
             K-BRIDGE::{chat.partnerName}
           </h2>
           <div className="flex items-center gap-1">
-            <Cpu className="w-3 h-3 text-[#F27D26]/50 animate-pulse" />
-            <span className="text-[9px] font-mono text-[#8E9299]/50 tracking-widest">SIGNAL_STABLE_P2P</span>
+            <Cpu className={cn("w-3 h-3 text-[#F27D26]/50 animate-pulse transition-colors", peerStatus === 'lost' && "text-red-500 animate-none")} />
+            <span className={cn("text-[9px] font-mono text-[#8E9299]/50 tracking-widest transition-colors", peerStatus === 'lost' && "text-red-500")}>
+              {peerStatus === 'stable' ? 'SIGNAL_STABLE_P2P' : 'SIGNAL_LOST_RECONNECTING'}
+            </span>
           </div>
         </div>
         
