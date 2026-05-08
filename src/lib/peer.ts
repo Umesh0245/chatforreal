@@ -9,6 +9,8 @@ class GhostPeer {
   onCall: ((stream: MediaStream) => void) | null = null;
 
   private initPromise: Promise<string> | null = null;
+  private watchdogInterval: number | null = null;
+  private heartbeatInterval: number | null = null;
 
   init(id?: string): Promise<string> {
     if (this.initPromise && this.peer?.open) return this.initPromise;
@@ -60,6 +62,7 @@ class GhostPeer {
         this.peer.on('open', (newId) => {
           clearTimeout(timeout);
           console.log('Bridge ready:', newId);
+          this.startWatchdog();
           resolve(newId);
         });
 
@@ -118,6 +121,44 @@ class GhostPeer {
   }
 
   onCallIncoming: ((call: MediaConnection) => void) | null = null;
+
+  private startWatchdog() {
+    if (this.watchdogInterval) clearInterval(this.watchdogInterval);
+    if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+
+    // Re-check connections every 10 seconds
+    this.watchdogInterval = window.setInterval(async () => {
+      if (!this.peer || this.peer.disconnected || this.peer.destroyed) {
+        console.log("Kernel watchdog: Peer signaling lost. Rebooting...");
+        this.init();
+        return;
+      }
+
+      // Check if we have pending outbox items for known peers and try to reconnect
+      const outbox = await db.outbox.toArray();
+      if (outbox.length > 0) {
+        for (const item of outbox) {
+          const chat = await db.conversations.get(item.conversationId);
+          if (chat && chat.partnerUid && chat.partnerUid !== 'waiting') {
+            const conn = this.connections.get(chat.partnerUid);
+            if (!conn || !conn.open) {
+              console.log(`Kernel watchdog: Attempting reconnection to ${chat.partnerUid}...`);
+              this.connectToPeer(chat.partnerUid, chat.id);
+            }
+          }
+        }
+      }
+    }, 10000);
+
+    // Heartbeat to keep connection active
+    this.heartbeatInterval = window.setInterval(() => {
+      this.connections.forEach((conn) => {
+        if (conn.open) {
+          conn.send({ type: 'heartbeat', timestamp: Date.now() });
+        }
+      });
+    }, 25000);
+  }
 
   private async ensurePeerOpen(): Promise<void> {
     if (!this.peer) {

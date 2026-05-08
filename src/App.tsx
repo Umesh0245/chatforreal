@@ -145,13 +145,7 @@ export default function App() {
   }
 
   return (
-    <div 
-      className="bg-[var(--bg-app)] text-[var(--fg-app)] font-sans selection:bg-[var(--accent)] selection:text-[#050505] overflow-hidden w-full fixed inset-0"
-      style={{ 
-        height: viewportHeight,
-        transform: `translateY(${viewportTop}px)`
-      }}
-    >
+    <>
       <AnimatePresence>
         {(!isOnline || outboxCount > 0) && (
           <motion.div 
@@ -159,17 +153,18 @@ export default function App() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
             className="fixed top-0 left-0 right-0 z-[600] bg-red-500 text-black py-1 px-4 flex items-center justify-center gap-4 border-b border-black/10 shadow-lg pointer-events-none"
+            style={{ paddingTop: 'max(4px, env(safe-area-inset-top))' }}
           >
             <div className="flex items-center gap-2">
               <Activity className={cn("w-3 h-3", isOnline ? "text-black" : "animate-pulse")} />
-              <span className="text-[9px] font-mono font-bold uppercase tracking-widest">
+              <span className="text-[9px] font-mono font-bold uppercase tracking-widest leading-none">
                 {isOnline ? 'SIGNAL:STABLE' : 'SIGNAL:LOST_OFFLINE_MODE'}
               </span>
             </div>
             {outboxCount > 0 && (
               <div className="flex items-center gap-2 border-l border-black/20 pl-4">
                 <Terminal className="w-3 h-3 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold uppercase tracking-widest">
+                <span className="text-[9px] font-mono font-bold uppercase tracking-widest leading-none">
                   OUTBOX_PENDING::{outboxCount}
                 </span>
               </div>
@@ -177,6 +172,14 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <div 
+        className="bg-[var(--bg-app)] text-[var(--fg-app)] font-sans selection:bg-[var(--accent)] selection:text-[#050505] overflow-hidden w-full fixed inset-0"
+        style={{ 
+          height: viewportHeight,
+          transform: `translateY(${viewportTop}px)`
+        }}
+      >
 
       <div className="flex h-full w-full relative">
         {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
@@ -241,5 +244,6 @@ export default function App() {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }
