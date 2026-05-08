@@ -131,12 +131,13 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
       const encrypted = await encryptMessage(text, chat.encryptionKey);
       const timestamp = Date.now();
 
-      await db.messages.add({
+      const messageId = await db.messages.add({
         conversationId: chatId,
         senderUid: currentPeerId || 'anon',
         encryptedText: text,
         timestamp,
-        isRead: 1
+        isRead: 1,
+        isSynced: 0
       });
 
       await db.conversations.update(chatId, {
@@ -146,7 +147,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
 
       // Send via PeerJS
       if (chat.partnerUid && chat.partnerUid !== 'waiting') {
-        await ghostPeer.sendMessage(chat.partnerUid, chatId, encrypted);
+        await ghostPeer.sendMessage(chat.partnerUid, chatId, encrypted, messageId as number);
       }
     } catch (e) {
       console.error("Send error", e);
@@ -159,7 +160,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
-      const call = await ghostPeer.peer?.call(chat.partnerUid, stream);
+      const call = await ghostPeer.callPeer(chat.partnerUid, chatId, stream);
       
       if (call) {
         setIsCalling(true);
@@ -461,6 +462,12 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
                   <div className="flex items-center gap-2 mb-2 opacity-30 text-[8px] uppercase tracking-widest border-b border-white/5 pb-1">
                     <span>{isMe ? 'Local_Node' : 'Remote_Peer'}</span>
                     <span className="ml-auto opacity-50">{new Date(msg.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    {isMe && (
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        msg.isSynced ? "bg-[var(--accent)]" : "bg-red-500 animate-pulse appearance-none"
+                      )} title={msg.isSynced ? "SYNCED" : "SIGNAL_PENDING"} />
+                    )}
                   </div>
                   {msg.encryptedText}
                 </div>

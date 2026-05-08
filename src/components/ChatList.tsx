@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, Shield, Share2, Plus, Search, Trash2, Ban, Cpu, Sun, Moon } from 'lucide-react';
+import { Activity, Shield, Share2, Plus, Search, Trash2, Ban, Cpu, Sun, Moon, Scan, Bell, BellOff } from 'lucide-react';
 import { db, type Conversation } from '../lib/db';
 import { cn, formatDate } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -8,14 +8,21 @@ interface ChatListProps {
   onSelectChat: (id: string) => void;
   activeChatId: string | null;
   currentPeerId: string | null;
+  onOpenScanner: () => void;
 }
 
-export function ChatList({ onSelectChat, activeChatId, currentPeerId }: ChatListProps) {
+export function ChatList({ onSelectChat, activeChatId, currentPeerId, onOpenScanner }: ChatListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('ghost_theme') as 'dark' | 'light') || 'dark';
   });
+  const [notifPermission, setNotifPermission] = useState(Notification.permission);
+
+  const requestNotif = async () => {
+    const res = await Notification.requestPermission();
+    setNotifPermission(res);
+  };
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -57,11 +64,28 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId }: ChatList
           </h1>
           <div className="flex items-center gap-2">
             <button 
+              onClick={requestNotif}
+              className={cn(
+                "p-2 border border-[var(--border-color)] rounded-xl transition-all active:scale-95",
+                notifPermission === 'granted' ? "text-[var(--accent)] border-[var(--accent)]/30" : "text-[var(--fg-muted)]"
+              )}
+              aria-label="Toggle notifications"
+            >
+              {notifPermission === 'granted' ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+            </button>
+            <button 
               onClick={toggleTheme}
               className="p-2 border border-[var(--border-color)] text-[var(--fg-app)] rounded-xl hover:bg-[var(--bg-input)] transition-all active:scale-95"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button 
+              onClick={onOpenScanner}
+              className="p-2 border border-[var(--border-color)] text-[var(--fg-app)] rounded-xl hover:bg-[var(--bg-input)] transition-all active:scale-95"
+              aria-label="Scan QR code"
+            >
+              <Scan className="w-4 h-4" />
             </button>
             <button 
               onClick={() => onSelectChat('new')}

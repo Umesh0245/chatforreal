@@ -18,17 +18,27 @@ export interface Message {
   encryptedText: string;
   timestamp: number;
   isRead: number; // 0 or 1
+  isSynced?: number; // 0 or 1, for signal confirmation
+}
+
+export interface OutboxItem {
+  id?: number;
+  conversationId: string;
+  data: any; // The raw data to send via peer
+  timestamp: number;
 }
 
 export class GhostChatDB extends Dexie {
   conversations!: Table<Conversation>;
   messages!: Table<Message>;
+  outbox!: Table<OutboxItem>;
 
   constructor() {
     super('GhostChatDB');
-    this.version(1).stores({
+    this.version(3).stores({
       conversations: 'id, partnerUid, updatedAt, isBlocked',
-      messages: '++id, conversationId, timestamp, senderUid'
+      messages: '++id, conversationId, timestamp, senderUid, isSynced',
+      outbox: '++id, conversationId, timestamp'
     });
   }
 }

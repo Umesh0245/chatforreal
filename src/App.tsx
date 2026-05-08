@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { Activity, Terminal } from 'lucide-react';
 import { ChatList } from './components/ChatList';
 import { ChatWindow } from './components/ChatWindow';
 import { Welcome } from './components/Welcome';
 import { LockScreen } from './components/LockScreen';
+import { Scanner } from './components/Scanner';
 import { cleanupOldMessages, db } from './lib/db';
 import { cn } from './lib/utils';
 import { ghostPeer } from './lib/peer';
@@ -14,6 +16,7 @@ export default function App() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(true);
+  const [showScanner, setShowScanner] = useState(false);
   const [viewportHeight, setViewportHeight] = useState('100dvh');
   const [viewportTop, setViewportTop] = useState(0);
 
@@ -72,6 +75,60 @@ export default function App() {
     cleanupOldMessages();
   }, []);
 
+  const handleScan = useCallback(async (data: string) => {
+    try {
+      const url = new URL(data);
+      const rid = url.searchParams.get('rid');
+      const key = url.searchParams.get('key');
+      const name = url.searchParams.get('name');
+      const pid = url.searchParams.get('pid');
+
+      if (rid && key && name && pid) {
+        // Find if conversation exists
+        let conversation = await db.conversations.get(rid);
+        
+        if (!conversation) {
+          conversation = {
+            id: rid,
+            partnerUid: pid,
+            partnerName: name,
+            encryptionKey: key,
+            updatedAt: Date.now(),
+            isBlocked: 0
+          };
+          await db.conversations.add(conversation);
+        }
+
+        setActiveChatId(rid);
+        setShowScanner(false);
+      }
+    } catch (e) {
+      console.error("Invalid QR data", e);
+    }
+  }, []);
+
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [outboxCount, setOutboxCount] = useState(0);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    const checkOutbox = async () => {
+      const count = await db.outbox.count();
+      setOutboxCount(count);
+    };
+    const interval = setInterval(checkOutbox, 2000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="fixed inset-0 z-[500] flex items-center justify-center bg-[var(--bg-app)] text-[var(--accent)]">
@@ -95,13 +152,44 @@ export default function App() {
         transform: `translateY(${viewportTop}px)`
       }}
     >
+      <AnimatePresence>
+        {(!isOnline || outboxCount > 0) && (
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            className="fixed top-0 left-0 right-0 z-[600] bg-red-500 text-black py-1 px-4 flex items-center justify-center gap-4 border-b border-black/10 shadow-lg pointer-events-none"
+          >
+            <div className="flex items-center gap-2">
+              <Activity className={cn("w-3 h-3", isOnline ? "text-black" : "animate-pulse")} />
+              <span className="text-[9px] font-mono font-bold uppercase tracking-widest">
+                {isOnline ? 'SIGNAL:STABLE' : 'SIGNAL:LOST_OFFLINE_MODE'}
+              </span>
+            </div>
+            {outboxCount > 0 && (
+              <div className="flex items-center gap-2 border-l border-black/20 pl-4">
+                <Terminal className="w-3 h-3 animate-pulse" />
+                <span className="text-[9px] font-mono font-bold uppercase tracking-widest">
+                  OUTBOX_PENDING::{outboxCount}
+                </span>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex h-full w-full relative">
         {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
         <div className={cn(
           "flex-col border-r border-[var(--border-color)] transition-all duration-300",
           activeChatId ? "hidden md:flex w-full md:w-80" : "flex w-full md:w-80"
         )}>
-          <ChatList onSelectChat={setActiveChatId} activeChatId={activeChatId} currentPeerId={peerId} />
+          <ChatList 
+            onSelectChat={setActiveChatId} 
+            activeChatId={activeChatId} 
+            currentPeerId={peerId} 
+            onOpenScanner={() => setShowScanner(true)}
+          />
         </div>
 
         {/* Main Chat Area */}
@@ -122,7 +210,7 @@ export default function App() {
               </motion.div>
             ) : (
               <div className="flex items-center justify-center w-full h-full p-8 text-center">
-                <Welcome currentPeerId={peerId} onJoinChat={setActiveChatId} />
+                <Welcome currentPeerId={peerId} onJoinChat={setActiveChatId} onOpenScanner={() => setShowScanner(true)} />
               </div>
             )}
           </AnimatePresence>
@@ -140,6 +228,16 @@ export default function App() {
           >
             <LockScreen onUnlock={() => setIsLocked(false)} />
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Scanner Overlay */}
+      <AnimatePresence>
+        {showScanner && (
+          <Scanner 
+            onScan={handleScan} 
+            onClose={() => setShowScanner(false)} 
+          />
         )}
       </AnimatePresence>
     </div>

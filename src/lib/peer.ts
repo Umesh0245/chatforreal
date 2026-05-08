@@ -90,10 +90,13 @@ class GhostPeer {
           this.setupConnection(conn);
         });
 
-        this.peer.on('call', (call) => {
+        this.peer.on('call', async (call) => {
+          const chat = await db.conversations.filter(c => c.partnerUid === call.peer).first();
+          const senderDisplay = chat?.partnerName || 'REMOTE_PEER';
+
           if (Notification.permission === 'granted') {
-            const notification = new Notification(`SECURE_VOICE_SIGNAL`, {
-              body: "INCOMING_P2P_LINK_REQUEST",
+            const notification = new Notification(`INCOMING_LINK [${senderDisplay}]`, {
+              body: "SECURE_P2P_VOICE_STREAM_INITIATED",
               icon: 'https://img.icons8.com/fluency/512/link.png',
               requireInteraction: true,
               tag: 'incoming-call'
@@ -138,9 +141,27 @@ class GhostPeer {
   setupConnection(conn: DataConnection) {
     const peerId = conn.peer;
     
-    conn.on('open', () => {
+    conn.on('open', async () => {
       console.log('Bridge established with:', peerId);
       this.connections.set(peerId, conn);
+
+      // Flush outbox for this peer
+      try {
+        const outboxItems = await db.outbox.toArray();
+        for (const item of outboxItems) {
+          const chat = await db.conversations.get(item.conversationId);
+          if (chat && chat.partnerUid === peerId) {
+            conn.send(item.data);
+            if (item.data.mid) {
+              await db.messages.update(item.data.mid, { isSynced: 1 });
+            }
+            await db.outbox.delete(item.id!);
+            console.log('Kernel: Outbox segment transmitted successfully', item.id);
+          }
+        }
+      } catch (err) {
+        console.error('Kernel Outbox fault:', err);
+      }
     });
 
     conn.on('data', async (data: any) => {
@@ -173,6 +194,36 @@ class GhostPeer {
         }
       }
 
+      if (type === 'call-signal') {
+        const chat = await db.conversations.get(rid);
+        if (chat && chat.isBlocked === 0) {
+          const senderDisplay = senderName || chat.partnerName || 'REMOTE_PEER';
+          
+          await db.messages.add({
+            conversationId: rid,
+            senderUid: conn.peer,
+            encryptedText: `[SYSTEM_SIGNAL]: INCOMING_CALL_REQUEST`,
+            timestamp: Date.now(),
+            isRead: 0
+          });
+
+          this.onMessage?.(rid, `[SIGNAL]: Incoming request from ${senderDisplay}`);
+          
+          if (Notification.permission === 'granted') {
+            const notification = new Notification(`CALL_SIGNAL [${senderDisplay}]`, {
+              body: "REMOTE_PEER_ATTEMPTING_INIT",
+              icon: 'https://img.icons8.com/fluency/512/link.png',
+              tag: 'call-signal-' + rid,
+              renotify: true
+            } as any);
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
+          }
+        }
+      }
+
       if (type === 'message') {
         const chat = await db.conversations.get(rid);
         if (chat && chat.isBlocked === 0) {
@@ -193,13 +244,16 @@ class GhostPeer {
 
           this.onMessage?.(rid, decrypted);
 
+          const senderDisplay = chat.partnerName || 'REMOTE_PEER';
+          
           if (Notification.permission === 'granted') {
-            const notification = new Notification(`${chat.partnerName || 'FLUX_BRIDGE'}`, {
+            const notification = new Notification(`${senderDisplay}`, {
               body: decrypted,
               icon: 'https://img.icons8.com/fluency/512/link.png',
               tag: rid,
+              badge: 'https://img.icons8.com/fluency/128/link.png',
               renotify: true
-            });
+            } as any);
             notification.onclick = () => {
               window.focus();
               notification.close();
@@ -240,44 +294,79 @@ class GhostPeer {
     return conn;
   }
 
-  async sendMessage(peerId: string, roomId: string, encryptedText: string) {
+  async sendMessage(peerId: string, roomId: string, encryptedText: string, messageId: number) {
     await this.ensurePeerOpen();
     let conn = this.connections.get(peerId);
     
-    const send = (c: DataConnection) => {
-      if (c && c.open) {
-        c.send({ type: 'message', payload: encryptedText, rid: roomId });
-      } else {
-        console.warn('Attempted to send over closed connection. Reconnecting...');
-        this.connections.delete(peerId);
-        this.connectToPeer(peerId, roomId).then(newConn => {
-          if (newConn) {
-            newConn.on('open', () => {
-              newConn.send({ type: 'message', payload: encryptedText, rid: roomId });
-            });
-          }
-        });
-      }
+    const messageData = { 
+      type: 'message', 
+      payload: encryptedText, 
+      rid: roomId, 
+      timestamp: Date.now(),
+      mid: messageId 
+    };
+
+    const queueInOutbox = async () => {
+      await db.outbox.add({
+        conversationId: roomId,
+        data: messageData,
+        timestamp: Date.now()
+      });
+      console.log('Signal lost: Segment queued in outbox kernel.');
     };
 
     if (conn && conn.open) {
-      send(conn);
+      try {
+        conn.send(messageData);
+        await db.messages.update(messageId, { isSynced: 1 });
+      } catch (err) {
+        console.warn('Send failure, queueing...', err);
+        await queueInOutbox();
+      }
     } else {
       console.log('Bridge inactive. Initializing tunnel to:', peerId);
-      const newConn = await this.connectToPeer(peerId, roomId);
-      if (newConn) {
-        if (newConn.open) {
-          send(newConn);
+      try {
+        const newConn = await this.connectToPeer(peerId, roomId);
+        if (newConn) {
+          if (newConn.open) {
+            newConn.send(messageData);
+            await db.messages.update(messageId, { isSynced: 1 });
+          } else {
+            await queueInOutbox();
+          }
         } else {
-          newConn.on('open', () => send(newConn));
+          await queueInOutbox();
         }
+      } catch (err) {
+        await queueInOutbox();
       }
     }
   }
 
-  async callPeer(peerId: string, stream: MediaStream) {
+  async callPeer(peerId: string, roomId: string, stream: MediaStream) {
     await this.ensurePeerOpen();
     if (!this.peer) return;
+
+    // Send a call signal message first
+    const signalData = {
+      type: 'call-signal',
+      rid: roomId,
+      senderName: localStorage.getItem('ghost_user_name') || 'REMOTE_PEER',
+      timestamp: Date.now()
+    };
+
+    let conn = this.connections.get(peerId);
+    if (conn && conn.open) {
+      conn.send(signalData);
+    } else {
+      // Outbox it if needed
+      await db.outbox.add({
+        conversationId: roomId,
+        data: signalData,
+        timestamp: Date.now()
+      });
+    }
+
     return this.peer.call(peerId, stream);
   }
 }

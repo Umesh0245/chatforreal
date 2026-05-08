@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Activity, Share2, Smartphone, ArrowRight, Plus, Terminal, Cpu } from 'lucide-react';
+import { Activity, Share2, Smartphone, ArrowRight, Plus, Terminal, Cpu, Scan } from 'lucide-react';
 import { generateKey } from '../lib/crypto';
 import { db } from '../lib/db';
 import { ghostPeer } from '../lib/peer';
@@ -9,9 +9,10 @@ import { motion, AnimatePresence } from 'motion/react';
 interface WelcomeProps {
   currentPeerId: string | null;
   onJoinChat: (id: string) => void;
+  onOpenScanner?: () => void;
 }
 
-export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
+export function Welcome({ currentPeerId, onJoinChat, onOpenScanner }: WelcomeProps) {
   const [pairingUrl, setPairingUrl] = useState('');
   const [step, setStep] = useState(1);
   const [newRoomId, setNewId] = useState('');
@@ -152,6 +153,15 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
                 <Plus className="w-5 h-5" /> INITIALIZE NODE BUFFER
               </button>
               
+              {onOpenScanner && (
+                <button 
+                  onClick={onOpenScanner}
+                  className="w-full border border-[var(--border-color)] text-[var(--fg-app)] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-[var(--bg-input)] active:scale-95 transition-all"
+                >
+                  <Scan className="w-5 h-5 text-[var(--accent)]" /> SYNC_SCAN_REMOTE
+                </button>
+              )}
+
               <div className="flex items-center gap-4 py-2">
                 <div className="h-[1px] flex-grow bg-[var(--border-color)]" />
                 <span className="text-[10px] font-mono text-[var(--fg-muted)]">OFFLINE READY</span>

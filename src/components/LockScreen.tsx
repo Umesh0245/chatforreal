@@ -9,20 +9,41 @@ interface LockScreenProps {
 export function LockScreen({ onUnlock }: LockScreenProps) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
+  const [setupMode, setSetupMode] = useState(!localStorage.getItem('ghost_pin'));
+  const [setupConfirm, setSetupConfirm] = useState('');
 
   const handleInput = (val: string) => {
     if (pin.length < 4) {
       const newPin = pin + val;
       setPin(newPin);
+      
       if (newPin.length === 4) {
-        if (newPin === '4444') {
-          onUnlock();
-        } else {
-          setError(true);
-          setTimeout(() => {
+        if (setupMode) {
+          if (!setupConfirm) {
+            setSetupConfirm(newPin);
             setPin('');
-            setError(false);
-          }, 500);
+          } else if (setupConfirm === newPin) {
+            localStorage.setItem('ghost_pin', newPin);
+            onUnlock();
+          } else {
+            setError(true);
+            setTimeout(() => {
+              setPin('');
+              setSetupConfirm('');
+              setError(false);
+            }, 500);
+          }
+        } else {
+          const savedPin = localStorage.getItem('ghost_pin');
+          if (newPin === savedPin) {
+            onUnlock();
+          } else {
+            setError(true);
+            setTimeout(() => {
+              setPin('');
+              setError(false);
+            }, 500);
+          }
         }
       }
     }
@@ -45,7 +66,14 @@ export function LockScreen({ onUnlock }: LockScreenProps) {
           </div>
         </div>
         <h2 className="text-xs font-mono uppercase tracking-[0.6em] text-[var(--accent)] opacity-40 mb-1">Bridge_Kernel_v4</h2>
-        <h1 className="text-xl font-mono uppercase tracking-widest text-[var(--fg-app)]">Auth_Required</h1>
+        <h1 className="text-xl font-mono uppercase tracking-widest text-[var(--fg-app)]">
+          {setupMode ? (setupConfirm ? 'Confirm_Channel_Key' : 'Initialize_Auth_Key') : 'Auth_Required'}
+        </h1>
+        {setupMode && (
+          <p className="text-[9px] font-mono text-[var(--fg-muted)] mt-2 uppercase tracking-tight max-w-[200px] mx-auto opacity-50">
+            {setupConfirm ? 'Re-enter to verify security parameter' : 'Define a 4-digit system access code'}
+          </p>
+        )}
       </motion.div>
 
       <div className="flex gap-4 mb-12">
