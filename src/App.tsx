@@ -59,6 +59,11 @@ export default function App() {
     const init = async () => {
       let savedId = localStorage.getItem('ghost_peer_id') || undefined;
       
+      // Safety timeout: don't let the loading screen hang forever
+      const safetyTimer = setTimeout(() => {
+        setLoading(false);
+      }, 4000);
+
       try {
         const id = await ghostPeer.init(savedId);
         localStorage.setItem('ghost_peer_id', id);
@@ -66,6 +71,7 @@ export default function App() {
       } catch (err) {
         console.error("Peer init failed", err);
       } finally {
+        clearTimeout(safetyTimer);
         setLoading(false);
       }
     };

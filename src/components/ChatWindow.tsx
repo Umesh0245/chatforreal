@@ -235,7 +235,14 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     m.encryptedText.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (!chat) return null;
+  if (!chat) return (
+    <div className="flex-grow bg-[#050505] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <Cpu className="w-8 h-8 text-[#F27D26] animate-spin opacity-20" />
+        <span className="text-[10px] font-mono text-[#F27D26]/20 tracking-[0.5em]">BUFFER_LOADING...</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full bg-[#050505]">

@@ -12,7 +12,11 @@ class GhostPeer {
 
   init(id?: string): Promise<string> {
     if (this.initPromise && this.peer?.open) return this.initPromise;
-    if (this.initPromise && !this.peer?.destroyed) return this.initPromise;
+    
+    // If already initializing but not open, return the same promise
+    if (this.initPromise && this.peer && !this.peer.destroyed) {
+      return this.initPromise;
+    }
 
     this.initPromise = new Promise((resolve) => {
       const cleanup = () => {
@@ -20,7 +24,8 @@ class GhostPeer {
           try {
             this.peer.off('open');
             this.peer.off('error');
-            this.peer.destroy();
+            this.peer.off('disconnected');
+            if (!this.peer.destroyed) this.peer.destroy();
             this.peer = null;
           } catch (e) {
             console.error("Cleanup error:", e);
@@ -39,37 +44,35 @@ class GhostPeer {
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
               { urls: 'stun:global.stun.twilio.com:3478' }
-            ]
+            ],
+            sdpSemantics: 'unified-plan'
           }
         });
 
         const timeout = setTimeout(() => {
           if (this.peer && !this.peer.open) {
-            console.warn('Init timeout. Proceeding with current node state.');
+            console.warn('Init timeout. Use current ID state.');
             const finalId = this.peer.id || targetId || generateRandomId();
             resolve(finalId);
           }
-        }, 12000);
+        }, 8000);
 
         this.peer.on('open', (newId) => {
           clearTimeout(timeout);
-          console.log('Kernel node bridge active:', newId);
+          console.log('Bridge ready:', newId);
           resolve(newId);
         });
 
         this.peer.on('error', (err: any) => {
           clearTimeout(timeout);
-          console.error('PeerJS Fault:', err.type, err.message);
+          console.error('Peer Fault:', err.type);
 
-          if (err.type === 'unavailable-id' || err.type === 'invalid-id') {
+          if (err.type === 'unavailable-id' || err.type === 'invalid-id' || err.type === 'peer-unavailable') {
             localStorage.removeItem('ghost_peer_id');
             const nextId = generateRandomId();
-            console.warn('Collision detected. Retrying with:', nextId);
-            setTimeout(() => attemptInit(nextId), 500);
+            setTimeout(() => attemptInit(nextId), 300);
           } else {
-            // For other errors, we resolve to avoid blocking the app
-            const fallback = this.peer?.id || targetId || generateRandomId();
-            resolve(fallback);
+            resolve(this.peer?.id || targetId || generateRandomId());
           }
         });
 
@@ -142,7 +145,7 @@ class GhostPeer {
       if (type === 'handshake') {
         const chat = await db.conversations.get(rid);
         // Link the room to the actual peer ID
-        if (chat && (chat.partnerUid === 'waiting' || chat.partnerUid !== peerId)) {
+        if (chat && (chat.partnerUid === 'waiting' || chat.partnerUid !== peerId || chat.partnerName === 'AWAITING_HANDSHAKE')) {
           await db.conversations.update(rid, {
             partnerUid: peerId,
             partnerName: senderName || chat.partnerName,

@@ -35,6 +35,9 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
       Notification.requestPermission();
     }
 
+    const myName = localStorage.getItem('ghost_user_name') || `NODE-${Math.floor(Math.random() * 900) + 100}`;
+    localStorage.setItem('ghost_user_name', myName);
+
     const existing = await db.conversations.get(rid);
     if (!existing) {
       await db.conversations.add({
@@ -42,6 +45,7 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
         partnerUid: pid,
         partnerName: name,
         encryptionKey: key,
+        lastMessage: 'SECURE_TUNNEL_INITIALIZED',
         updatedAt: Date.now(),
         isBlocked: 0
       });
@@ -50,8 +54,11 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
     // Immediately try to connect to establish the bridge
     ghostPeer.connectToPeer(pid, rid);
     
-    window.history.replaceState({}, '', window.location.pathname);
-    onJoinChat(rid);
+    // Clean URL
+    window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+    
+    // Slight delay to allow DB commit
+    setTimeout(() => onJoinChat(rid), 200);
   };
 
   const createRoom = async () => {
@@ -62,7 +69,8 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
 
     const rid = Math.random().toString(36).substring(2, 10);
     const key = await generateKey();
-    const name = customName.trim() || `GHOST-${Math.floor(Math.random() * 9000) + 1000}`;
+    const name = customName.trim() || `BUFFER-${Math.floor(Math.random() * 900) + 100}`;
+    localStorage.setItem('ghost_user_name', name);
     
     const url = new URL(window.location.href);
     url.searchParams.set('rid', rid);
