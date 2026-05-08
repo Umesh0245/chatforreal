@@ -20,28 +20,23 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
     
     const initializeScanner = async () => {
       // Add a small delay to ensure the container is stable and in DOM
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 800));
       if (!isMounted) return;
 
       try {
         const qrCode = new Html5Qrcode(readerId);
         qrCodeRef.current = qrCode;
 
-        // Try to find the back camera first
-        const devices = await Html5Qrcode.getCameras();
-        if (!devices || devices.length === 0) {
-          throw new Error("No camera modules detected on this hardware.");
-        }
-
         setCameraPermission(true);
 
         const config = {
-          fps: 15,
-          qrbox: { width: 260, height: 260 },
-          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+          fps: 20,
+          qrbox: { width: 280, height: 280 },
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          aspectRatio: 1.0
         };
 
-        // Try environment camera first, then user, then any
+        // Strict priority 1: Environment (Back) camera
         try {
           await qrCode.start(
             { facingMode: "environment" },
@@ -53,9 +48,17 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
             () => {} 
           );
         } catch (e) {
-          console.warn("Failed to start environment camera, trying user camera...", e);
+          console.warn("Back camera failed, searching for any camera...", e);
+          
+          const devices = await Html5Qrcode.getCameras();
+          if (!devices || devices.length === 0) {
+            throw new Error("Optical sensor not detected.");
+          }
+
+          // Try the last device (often the primary back camera on many mobiles)
+          const lastCamera = devices[devices.length - 1];
           await qrCode.start(
-            { facingMode: "user" },
+            lastCamera.id,
             config,
             (decodedText) => {
               onScan(decodedText);

@@ -182,52 +182,6 @@ export default function App() {
           transform: `translateY(${viewportTop}px)`
         }}
       >
-        {/* Signal Status Bar - Integrated into Flex Flow */}
-        <AnimatePresence>
-          {(outboxCount > 0 || peerStatus !== 'connected' || !isOnline) && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 32, opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className={cn(
-                "w-full z-[600] py-1 px-4 flex items-center justify-center gap-6 border-b transition-colors duration-500 overflow-hidden shrink-0",
-                isOnline && peerStatus === 'connected' ? "bg-green-500 border-green-600 text-black shadow-[0_2px_10px_rgba(34,197,94,0.3)]" : 
-                isOnline && peerStatus === 'connecting' ? "bg-amber-400 border-amber-500 text-black" :
-                "bg-red-500 border-red-600 text-white shadow-[0_2px_10px_rgba(239,68,68,0.2)]"
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <Activity className={cn("w-3 h-3", peerStatus !== 'connected' && "animate-pulse")} />
-                <span className="text-[8px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
-                  SIGNAL::{!isOnline ? 'OFFLINE' : peerStatus.toUpperCase()}
-                </span>
-              </div>
-              {outboxCount > 0 && (
-                <div className="flex items-center gap-2 border-l border-black/20 pl-4">
-                  <Terminal className="w-3 h-3 animate-pulse" />
-                  <span className="text-[8px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
-                    OUTBOX::{outboxCount}
-                  </span>
-                  <button 
-                    onClick={() => ghostPeer.init()}
-                    className="ml-2 bg-black/20 hover:bg-black/30 px-2 py-0.5 rounded text-[7px] border border-black/10 transition-all active:scale-95 pointer-events-auto font-bold"
-                  >
-                    SYNC_NOW
-                  </button>
-                </div>
-              )}
-              {isOnline && peerStatus === 'disconnected' && (
-                <button 
-                  onClick={() => ghostPeer.init()}
-                  className="bg-black/20 hover:bg-black/30 px-2 py-0.5 rounded text-[7px] border border-black/10 transition-all active:scale-95 pointer-events-auto font-bold uppercase"
-                >
-                  Reconnect_Kernel
-                </button>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <div className="flex flex-grow w-full relative h-full flex-row overflow-hidden">
           {/* Sidebar */}
           <div className={cn(
@@ -267,6 +221,48 @@ export default function App() {
             </AnimatePresence>
           </div>
         </div>
+
+        {/* Global Connection Status Pane (Ergonomic Mobile Position) */}
+        <AnimatePresence>
+          {(outboxCount > 0 || peerStatus !== 'connected' || !isOnline) && (
+            <motion.div 
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              className={cn(
+                "fixed bottom-4 left-4 right-4 z-[400] p-3 rounded-2xl border backdrop-blur-xl flex items-center justify-between gap-4 shadow-2xl transition-colors duration-500",
+                isOnline && peerStatus === 'connected' ? "bg-green-500/90 border-green-400 text-black" : 
+                isOnline && peerStatus === 'connecting' ? "bg-amber-400/90 border-amber-300 text-black" :
+                "bg-red-500/90 border-red-400 text-white"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  peerStatus === 'connected' ? "bg-black" : "bg-black animate-ping"
+                )} />
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
+                    {!isOnline ? 'SIGNAL:OFFLINE' : `SIGNAL:${peerStatus.toUpperCase()}`}
+                  </span>
+                  {outboxCount > 0 && (
+                    <span className="text-[8px] font-mono opacity-80 uppercase">
+                      OUTBOX::{outboxCount} BUFFER_PENDING
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => ghostPeer.init()}
+                  className="bg-black/20 hover:bg-black/30 px-3 py-1.5 rounded-xl text-[9px] border border-black/10 transition-all active:scale-95 font-bold uppercase tracking-widest"
+                >
+                  Sync_Kernel
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Components Overlay */}
         <AnimatePresence>

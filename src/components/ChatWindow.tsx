@@ -356,33 +356,48 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
       <audio ref={remoteAudioRef} autoPlay />
 
       {/* Active Call UI Overlay */}
-      {isCalling && (
-        <motion.div 
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-[var(--accent)] text-[#050505] p-3 flex items-center justify-between z-40 shadow-2xl"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-[#050505] rounded-full animate-ping" />
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em]">VOICE_LINK_ESTABLISHED</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={toggleMute}
-              className="p-2 px-4 bg-[#050505]/10 rounded-lg hover:bg-[#050505]/20 transition-all font-mono text-[10px] font-bold flex items-center gap-2"
-            >
-              {isMuted ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
-              {isMuted ? "UNMUTE" : "MUTE"}
-            </button>
-            <button 
-              onClick={endCall}
-              className="p-2 px-4 bg-[#050505] text-[var(--accent)] rounded-lg hover:bg-black transition-all font-mono text-[10px] font-bold"
-            >
-              END_LINK
-            </button>
-          </div>
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {isCalling && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-[var(--accent)] text-[#050505] p-4 flex flex-col gap-3 z-40 shadow-[0_10px_40px_rgba(242,125,38,0.3)] shrink-0"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-2.5 h-2.5 bg-[#050505] rounded-full animate-ping" />
+                  <div className="absolute inset-0 w-2.5 h-2.5 bg-[#050505] rounded-full" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[12px] font-mono font-black tracking-[0.2em] uppercase">Audio_Stream_Active</span>
+                  <span className="text-[8px] font-mono opacity-60 uppercase">Peer_Identity_Verified // E2EE_TUNNEL</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={toggleMute}
+                  className={cn(
+                    "p-3 rounded-2xl transition-all font-mono text-[10px] font-bold flex items-center gap-2 border border-black/10",
+                    isMuted ? "bg-red-500 text-white" : "bg-[#050505]/10 hover:bg-[#050505]/20"
+                  )}
+                >
+                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  <span className="hidden sm:inline">{isMuted ? "UNMUTE" : "MUTE"}</span>
+                </button>
+                <button 
+                  onClick={endCall}
+                  className="p-3 bg-[#050505] text-[var(--accent)] rounded-2xl hover:bg-black transition-all font-mono text-[10px] font-bold flex items-center gap-2"
+                >
+                  <PhoneOff className="w-4 h-4" />
+                  <span className="hidden sm:inline">TERMINATE_LINK</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Incoming Call Overlay */}
       <AnimatePresence>

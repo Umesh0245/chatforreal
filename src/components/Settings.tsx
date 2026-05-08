@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Shield, Moon, Sun, Monitor, User, Trash2, Key, RotateCcw } from 'lucide-react';
+import { X, Shield, Moon, Sun, User, Trash2, Key, RotateCcw, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 import { db } from '../lib/db';
 import { ghostPeer } from '../lib/peer';
@@ -44,17 +44,24 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
 
   return (
     <motion.div 
-      initial={{ x: '100%' }}
-      animate={{ x: 0 }}
-      exit={{ x: '100%' }}
-      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="fixed inset-0 z-[300] bg-[var(--bg-app)] flex flex-col md:right-0 md:left-auto md:w-[400px] border-l border-[var(--border-color)] shadow-2xl"
+      initial={{ x: '100%', opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: '100%', opacity: 0 }}
+      className="fixed inset-0 z-[1000] bg-[var(--bg-app)] flex flex-col items-stretch h-full w-full"
     >
-      <header className="p-6 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-app)]/80 backdrop-blur-xl sticky top-0">
-        <h2 className="text-xl font-mono uppercase tracking-tighter flex items-center gap-2">
-          <Shield className="w-5 h-5 text-[var(--accent)]" /> SYSTEM_CONFIG<span className="text-[10px] opacity-30">[OS]</span>
-        </h2>
-        <button onClick={onClose} className="p-2 hover:bg-[var(--bg-input)] rounded-full transition-colors">
+      <header className="p-6 pt-12 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-app)]/80 backdrop-blur-xl shrink-0">
+        <div className="flex items-center gap-4">
+          <button onClick={onClose} className="p-3 bg-[var(--bg-input)] rounded-2xl hover:bg-[var(--border-color)] transition-all active:scale-90">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex flex-col">
+            <h2 className="text-xl font-mono uppercase tracking-tighter flex items-center gap-2">
+              <Shield className="w-4 h-4 text-[var(--accent)]" /> SYSTEM_CONFIG
+            </h2>
+            <span className="text-[8px] font-mono opacity-40 uppercase tracking-[0.2em]">Bridge_Kernel_V4.2.0</span>
+          </div>
+        </div>
+        <button onClick={onClose} className="p-2 text-[var(--fg-muted)] hover:text-[var(--fg-app)] hidden md:block">
           <X className="w-6 h-6" />
         </button>
       </header>

@@ -148,9 +148,11 @@ export function Welcome({ currentPeerId, onJoinChat, onOpenScanner }: WelcomePro
 
               <button 
                 onClick={createRoom}
-                className="w-full bg-[var(--accent)] text-[#050505] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--accent)]/10 font-bold"
+                disabled={!currentPeerId}
+                className="w-full bg-[var(--accent)] text-[#050505] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--accent)]/10 font-bold disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
               >
-                <Plus className="w-5 h-5" /> INITIALIZE NODE BUFFER
+                {currentPeerId ? <Plus className="w-5 h-5" /> : <RefreshCw className="w-5 h-5 animate-spin" />}
+                {currentPeerId ? 'INITIALIZE NODE BUFFER' : 'SYNCING_WITH_PEER_KERNEL...'}
               </button>
               
               {onOpenScanner && (
