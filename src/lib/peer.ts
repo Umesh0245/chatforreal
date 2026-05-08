@@ -12,77 +12,120 @@ class GhostPeer {
 
   init(id?: string): Promise<string> {
     if (this.initPromise && this.peer?.open) return this.initPromise;
+    if (this.initPromise && !this.peer?.destroyed) return this.initPromise;
 
-    this.initPromise = new Promise((resolve, reject) => {
-      if (this.peer) {
-        this.peer.destroy();
-      }
-
-      const peerId = id || localStorage.getItem('ghost_peer_id') || undefined;
-
-      this.peer = new Peer(peerId, {
-        debug: 1,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:global.stun.twilio.com:3478' }
-          ]
+    this.initPromise = new Promise((resolve) => {
+      const cleanup = () => {
+        if (this.peer) {
+          try {
+            this.peer.off('open');
+            this.peer.off('error');
+            this.peer.destroy();
+            this.peer = null;
+          } catch (e) {
+            console.error("Cleanup error:", e);
+          }
         }
-      });
+      };
 
-      const timeout = setTimeout(() => {
-        if (this.peer && !this.peer.open) {
-          console.warn('Peer initialization timed out. Proceeding anyway.');
-          resolve(this.peer.id || 'offline_node');
-        }
-      }, 10000);
-
-      this.peer.on('open', (newId) => {
-        clearTimeout(timeout);
-        console.log('Kernel node initialized:', newId);
-        resolve(newId);
-      });
-
-      this.peer.on('error', (err: any) => {
-        console.error('PeerJS Error:', err);
-        if (err.type === 'unavailable-id') {
-          localStorage.removeItem('ghost_peer_id');
-          this.init();
-        }
-      });
-
-      this.peer.on('disconnected', () => {
-        console.warn('Signal lost. Attempting reconnection...');
-        this.peer?.reconnect();
-      });
-
-      this.peer.on('close', () => {
-        console.warn('Peer connection closed.');
-        this.initPromise = null;
-      });
-    });
-
-    this.peer?.on('connection', (conn) => {
-      this.setupConnection(conn);
-    });
-
-    this.peer?.on('call', (call) => {
-      if (Notification.permission === 'granted' && document.hidden) {
-        new Notification(`FLUX_BRIDGE: SECURE_VOICE`, {
-          body: "INCOMING_P2P_SIGNAL_DETECTED",
-          icon: 'https://img.icons8.com/fluency/512/link.png',
-          requireInteraction: true
+      const generateRandomId = () => `node-${Math.random().toString(36).substring(2, 9)}`;
+      
+      const attemptInit = (targetId?: string) => {
+        cleanup();
+        
+        this.peer = new Peer(targetId, {
+          debug: 1,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+          }
         });
-      }
-      this.onCallIncoming?.(call);
+
+        const timeout = setTimeout(() => {
+          if (this.peer && !this.peer.open) {
+            console.warn('Init timeout. Proceeding with current node state.');
+            const finalId = this.peer.id || targetId || generateRandomId();
+            resolve(finalId);
+          }
+        }, 12000);
+
+        this.peer.on('open', (newId) => {
+          clearTimeout(timeout);
+          console.log('Kernel node bridge active:', newId);
+          resolve(newId);
+        });
+
+        this.peer.on('error', (err: any) => {
+          clearTimeout(timeout);
+          console.error('PeerJS Fault:', err.type, err.message);
+
+          if (err.type === 'unavailable-id' || err.type === 'invalid-id') {
+            localStorage.removeItem('ghost_peer_id');
+            const nextId = generateRandomId();
+            console.warn('Collision detected. Retrying with:', nextId);
+            setTimeout(() => attemptInit(nextId), 500);
+          } else {
+            // For other errors, we resolve to avoid blocking the app
+            const fallback = this.peer?.id || targetId || generateRandomId();
+            resolve(fallback);
+          }
+        });
+
+        this.peer.on('disconnected', () => {
+          console.warn('Signal unstable. Attempting reconnection...');
+          this.peer?.reconnect();
+        });
+
+        this.peer.on('close', () => {
+          console.warn('Bridge closed.');
+          this.initPromise = null;
+        });
+
+        this.peer.on('connection', (conn) => {
+          this.setupConnection(conn);
+        });
+
+        this.peer.on('call', (call) => {
+          if (Notification.permission === 'granted' && document.hidden) {
+            new Notification(`FLUX_BRIDGE: SECURE_VOICE`, {
+              body: "INCOMING_P2P_SIGNAL_DETECTED",
+              icon: 'https://img.icons8.com/fluency/512/link.png',
+              requireInteraction: true
+            });
+          }
+          this.onCallIncoming?.(call);
+        });
+      };
+
+      const initialId = id || localStorage.getItem('ghost_peer_id') || undefined;
+      attemptInit(initialId);
     });
 
-    return new Promise((resolve) => {
-      this.peer?.on('open', (newId) => resolve(newId));
-    });
+    return this.initPromise;
   }
 
   onCallIncoming: ((call: MediaConnection) => void) | null = null;
+
+  private async ensurePeerOpen(): Promise<void> {
+    if (!this.peer) {
+      await this.init();
+    }
+    if (this.peer?.open) return;
+    
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('PEER_OPEN_TIMEOUT')), 10000);
+      this.peer?.on('open', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      this.peer?.on('error', (e) => {
+        clearTimeout(timeout);
+        reject(e);
+      });
+    });
+  }
 
   setupConnection(conn: DataConnection) {
     const peerId = conn.peer;
@@ -111,13 +154,12 @@ class GhostPeer {
         this.connections.set(peerId, conn);
 
         // If we received a handshake with a senderId and we haven't sent ours yet, respond back
-        // This ensures the initiator also gets the receiver's name/ID
         if (senderId && type === 'handshake' && !data.isResponse) {
           conn.send({
             type: 'handshake',
             rid,
             senderId: this.peer?.id,
-            senderName: `PEER_${this.peer?.id.substring(0, 4)}`,
+            senderName: localStorage.getItem('ghost_user_name') || `PEER_${this.peer?.id.substring(0, 4)}`,
             isResponse: true
           });
         }
@@ -165,9 +207,9 @@ class GhostPeer {
   }
 
   async connectToPeer(peerId: string, roomId: string) {
+    await this.ensurePeerOpen();
     if (!this.peer) return;
     
-    // Always try a fresh connection if the current one is stale
     const existing = this.connections.get(peerId);
     if (existing && existing.open) return existing;
 
@@ -175,18 +217,18 @@ class GhostPeer {
     this.setupConnection(conn);
     
     conn.on('open', () => {
-      // Send handshake so initiator knows who joined which room
       conn.send({ 
         type: 'handshake', 
         rid: roomId, 
         senderId: this.peer?.id,
-        senderName: `PEER_${this.peer?.id.substring(0, 4)}` 
+        senderName: localStorage.getItem('ghost_user_name') || `PEER_${this.peer?.id.substring(0, 4)}`
       });
     });
     return conn;
   }
 
   async sendMessage(peerId: string, roomId: string, encryptedText: string) {
+    await this.ensurePeerOpen();
     let conn = this.connections.get(peerId);
     
     const send = (c: DataConnection) => {
@@ -221,6 +263,7 @@ class GhostPeer {
   }
 
   async callPeer(peerId: string, stream: MediaStream) {
+    await this.ensurePeerOpen();
     if (!this.peer) return;
     return this.peer.call(peerId, stream);
   }

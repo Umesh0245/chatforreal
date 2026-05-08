@@ -59,19 +59,12 @@ export default function App() {
     const init = async () => {
       let savedId = localStorage.getItem('ghost_peer_id') || undefined;
       
-      // Add a timeout to init so we don't block the UI forever
-      const initPromise = ghostPeer.init(savedId);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('init_timeout')), 10000)
-      );
-
       try {
-        const id = await Promise.race([initPromise, timeoutPromise]) as string;
+        const id = await ghostPeer.init(savedId);
         localStorage.setItem('ghost_peer_id', id);
         setPeerId(id);
       } catch (err) {
-        console.error("Peer init failed or timed out", err);
-        // We still let them into the app, functions might try to re-init later
+        console.error("Peer init failed", err);
       } finally {
         setLoading(false);
       }
