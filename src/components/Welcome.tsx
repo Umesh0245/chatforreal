@@ -119,7 +119,7 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
               <div className="bg-[#050505] border border-[#141414] rounded-xl p-4 flex items-center gap-3">
                 <Smartphone className="w-5 h-5 text-[#8E9299]" />
                 <p className="text-[10px] font-mono text-[#8E9299] text-left">
-                  ADD TO HOME SCREEN TO BYPASS SYSTEM CALL LOGS.
+                  NOTE: IOS STORAGE IS SANDBOXED. IF YOU ADD TO HOME SCREEN, START A NEW BUFFER THERE.
                 </p>
               </div>
             </div>

@@ -14,28 +14,40 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(true);
   const [viewportHeight, setViewportHeight] = useState('100dvh');
+  const [viewportTop, setViewportTop] = useState(0);
 
   useEffect(() => {
     const handleResize = () => {
       if (window.visualViewport) {
         setViewportHeight(`${window.visualViewport.height}px`);
-        // Smoothly scroll to bottom if keyboard up
-        if (window.visualViewport.height < window.innerHeight) {
-          document.body.scrollTop = 0;
-        }
+        setViewportTop(window.visualViewport.offsetTop);
       }
     };
 
     window.visualViewport?.addEventListener('resize', handleResize);
     window.visualViewport?.addEventListener('scroll', handleResize);
     
+    // Smooth scroll for input focus
+    const handleFocus = () => {
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+      }, 50);
+    };
+    window.addEventListener('focusin', handleFocus);
+    
     // Prevent scrolling on body to fix keyboard bounce issues
     document.body.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+    document.body.style.backgroundColor = '#050505';
 
     return () => {
       window.visualViewport?.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('scroll', handleResize);
+      window.removeEventListener('focusin', handleFocus);
     };
   }, []);
 
@@ -78,8 +90,8 @@ export default function App() {
       </AnimatePresence>
 
       <div 
-        style={{ height: viewportHeight }}
-        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed top-0 left-0 right-0"
+        style={{ height: viewportHeight, top: viewportTop }}
+        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed left-0 right-0"
       >
         {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
         <div className={cn(

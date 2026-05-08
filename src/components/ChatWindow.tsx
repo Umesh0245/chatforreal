@@ -49,15 +49,28 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
     loadData();
     const interval = setInterval(loadData, 1000);
 
-    // Ensure peer is connected if we have a partner ID
     const ensureConnection = async () => {
       checkPeer();
       const c = await db.conversations.get(chatId);
-      if (c && c.partnerUid && c.partnerUid !== 'waiting' && !ghostPeer.connections.has(c.partnerUid)) {
-        ghostPeer.connectToPeer(c.partnerUid, chatId);
+      if (c && c.partnerUid && c.partnerUid !== 'waiting') {
+        // Force a reconnect if the bridge is silent
+        if (!ghostPeer.connections.has(c.partnerUid)) {
+          ghostPeer.connectToPeer(c.partnerUid, chatId);
+        } else {
+          // If already connected, send a ping to re-stabilize the other end
+          ghostPeer.connections.get(c.partnerUid)?.send({ type: 'handshake', rid: chatId, senderId: currentPeerId });
+        }
       }
     };
     ensureConnection();
+
+    // Responsive keyboard scroll handler
+    const onViewportChange = () => {
+      if (window.visualViewport && window.visualViewport.height < window.innerHeight) {
+        scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    };
+    window.visualViewport?.addEventListener('resize', onViewportChange);
 
     // Incoming Call Listener
     ghostPeer.onCallIncoming = (call) => {
@@ -74,11 +87,18 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
       }
     };
 
-    return () => clearInterval(interval);
-  }, [chatId]);
+    return () => {
+      clearInterval(interval);
+      window.visualViewport?.removeEventListener('resize', onViewportChange);
+    };
+  }, [chatId, currentPeerId]);
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Smoother scroll transition
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   const handleSend = async () => {
@@ -279,16 +299,20 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
         <div ref={scrollRef} className="h-4" />
       </div>
 
-      <footer className="p-4 border-t border-[#141414] bg-[#050505] relative z-20">
+      <footer className="p-3 border-t border-[#141414] bg-[#050505] relative z-20 pb-safe">
         <div className="max-w-4xl mx-auto">
           {chat.isBlocked ? (
             <div className="bg-red-900/10 border border-red-900/30 rounded-lg p-3 flex items-center justify-center gap-2 text-red-500/70 text-[10px] font-mono uppercase tracking-[0.3em]">
               <ShieldAlert className="w-4 h-4 opacity-50" /> KERNEL_REJECTED
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-[#151619] rounded-xl border border-[#141414] p-1.5 focus-within:border-[#F27D26]/50 transition-all">
+            <div className="flex items-center gap-1.5 bg-[#151619] rounded-2xl border border-[#141414] p-1.5 focus-within:border-[#F27D26]/50 transition-all">
               <input 
                 type="text"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
                 inputMode="text"
                 enterKeyHint="send"
                 placeholder="APPEND_FRAME_DATA..."
@@ -296,28 +320,27 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 onFocus={() => {
-                  // Wait for viewport to settle
                   setTimeout(() => {
                     scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
                   }, 400);
                 }}
-                className="flex-grow bg-transparent border-none py-2.5 px-3 text-sm focus:outline-none transition-all font-mono placeholder:opacity-30"
+                className="flex-grow bg-transparent border-none py-3 px-3 text-sm focus:outline-none transition-all font-mono placeholder:opacity-30 min-h-[44px]"
               />
               <button 
                 onClick={handleSend}
                 disabled={!inputText.trim()}
                 className={cn(
-                  "p-3 rounded-lg transition-all shadow-lg",
+                  "p-3 rounded-xl transition-all shadow-lg active:scale-90",
                   inputText.trim() 
                     ? "bg-[#F27D26] text-[#050505] shadow-[#F27D26]/10" 
-                    : "bg-[#141414] text-[#8E9299]/30"
+                    : "bg-[#141414] text-[#8E9299]/20"
                 )}
               >
                 <Terminal className="w-5 h-5" />
               </button>
             </div>
           )}
-          <div className="h-[env(safe-area-inset-bottom)]" />
+          <div className="h-[max(env(safe-area-inset-bottom),8px)]" />
         </div>
       </footer>
     </div>

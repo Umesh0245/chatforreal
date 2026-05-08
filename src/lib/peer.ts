@@ -61,23 +61,30 @@ class GhostPeer {
   onCallIncoming: ((call: MediaConnection) => void) | null = null;
 
   setupConnection(conn: DataConnection) {
+    const peerId = conn.peer;
+    
     conn.on('open', () => {
-      console.log('Bridge established:', conn.peer);
-      this.connections.set(conn.peer, conn);
+      console.log('Bridge established with:', peerId);
+      this.connections.set(peerId, conn);
     });
 
     conn.on('data', async (data: any) => {
       console.log('Incoming segment:', data);
-      const { type, payload, rid, senderName } = data;
+      const { type, payload, rid, senderName, senderId } = data;
 
       if (type === 'handshake') {
         const chat = await db.conversations.get(rid);
-        if (chat && chat.partnerUid === 'waiting') {
+        // Link the room to the actual peer ID if it was 'waiting'
+        if (chat && (chat.partnerUid === 'waiting' || chat.partnerUid !== peerId)) {
           await db.conversations.update(rid, {
-            partnerUid: conn.peer,
+            partnerUid: peerId,
             partnerName: senderName || chat.partnerName,
             updatedAt: Date.now()
           });
+        }
+        // If we received a handshake, we should probably send one back to confirm
+        if (type === 'handshake' && senderId) {
+           this.connections.set(senderId, conn);
         }
       }
 
@@ -122,7 +129,12 @@ class GhostPeer {
   }
 
   async connectToPeer(peerId: string, roomId: string) {
-    if (!this.peer || this.connections.has(peerId)) return;
+    if (!this.peer) return;
+    
+    // Always try a fresh connection if the current one is stale
+    const existing = this.connections.get(peerId);
+    if (existing && existing.open) return existing;
+
     const conn = this.peer.connect(peerId);
     this.setupConnection(conn);
     
@@ -131,6 +143,7 @@ class GhostPeer {
       conn.send({ 
         type: 'handshake', 
         rid: roomId, 
+        senderId: this.peer?.id,
         senderName: `PEER_${this.peer?.id.substring(0, 4)}` 
       });
     });
@@ -141,17 +154,32 @@ class GhostPeer {
     let conn = this.connections.get(peerId);
     
     const send = (c: DataConnection) => {
-      c.send({ type: 'message', payload: encryptedText, rid: roomId });
+      if (c && c.open) {
+        c.send({ type: 'message', payload: encryptedText, rid: roomId });
+      } else {
+        console.warn('Attempted to send over closed connection. Reconnecting...');
+        this.connections.delete(peerId);
+        this.connectToPeer(peerId, roomId).then(newConn => {
+          if (newConn) {
+            newConn.on('open', () => {
+              newConn.send({ type: 'message', payload: encryptedText, rid: roomId });
+            });
+          }
+        });
+      }
     };
 
     if (conn && conn.open) {
       send(conn);
     } else {
-      console.log('Reconnecting to peer:', peerId);
-      conn = this.peer?.connect(peerId);
-      if (conn) {
-        this.setupConnection(conn);
-        conn.on('open', () => send(conn!));
+      console.log('Bridge inactive. Initializing tunnel to:', peerId);
+      const newConn = await this.connectToPeer(peerId, roomId);
+      if (newConn) {
+        if (newConn.open) {
+          send(newConn);
+        } else {
+          newConn.on('open', () => send(newConn));
+        }
       }
     }
   }
