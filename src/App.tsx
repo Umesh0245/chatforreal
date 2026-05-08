@@ -7,51 +7,29 @@ import { cleanupOldMessages, db } from './lib/db';
 import { cn } from './lib/utils';
 import { ghostPeer } from './lib/peer';
 import { motion, AnimatePresence } from 'motion/react';
+import { Cpu } from 'lucide-react';
 
 export default function App() {
   const [peerId, setPeerId] = useState<string | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(true);
-  const [viewportHeight, setViewportHeight] = useState('100dvh');
-  const [viewportTop, setViewportTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState('100vh');
 
   useEffect(() => {
-    const handleResize = () => {
-      if (window.visualViewport) {
-        // Use a more robust height calculation for Android
-        setViewportHeight(`${window.visualViewport.height}px`);
-        // Ensure the layout remains centered or top-aligned without jumping
-        window.scrollTo(0, 0);
-      }
+    const updateHeight = () => {
+      // Use dvh as primary if supported, fallback to vh or visualViewport
+      const vh = window.innerHeight;
+      setViewportHeight(`${vh}px`);
     };
 
-    window.visualViewport?.addEventListener('resize', handleResize);
-    window.visualViewport?.addEventListener('scroll', handleResize);
-    
-    // Smooth scroll for input focus
-    const handleFocus = () => {
-      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        setTimeout(() => {
-          window.scrollTo(0, 0);
-        }, 50);
-      }
-    };
-    window.addEventListener('focusin', handleFocus);
-    
-    // Base layout setup
-    document.documentElement.style.height = '100%';
-    document.body.style.height = '100%';
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    document.body.style.backgroundColor = '#050505';
-    document.body.style.overflow = 'hidden';
-    document.body.style.width = '100%';
+    window.addEventListener('resize', updateHeight);
+    window.visualViewport?.addEventListener('resize', updateHeight);
+    updateHeight();
 
     return () => {
-      window.visualViewport?.removeEventListener('resize', handleResize);
-      window.visualViewport?.removeEventListener('scroll', handleResize);
-      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('resize', updateHeight);
+      window.visualViewport?.removeEventListener('resize', updateHeight);
     };
   }, []);
 
@@ -87,28 +65,25 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center w-full h-full bg-[#050505] text-[#F27D26]">
+      <div className="fixed inset-0 z-[500] flex items-center justify-center bg-[#050505] text-[#F27D26]">
         <motion.div 
-          animate={{ opacity: [1, 0.5, 1] }}
-          transition={{ duration: 1, repeat: Infinity }}
-          className="text-xs font-mono uppercase tracking-[0.3em]"
+          animate={{ opacity: [1, 0.5, 1], scale: [1, 1.05, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="flex flex-col items-center gap-4"
         >
-          CONNECTING TO KERNEL_PROXY...
+          <Cpu className="w-12 h-12 animate-pulse" />
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em]">CONNECTING_KERNEL...</span>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <>
-      <AnimatePresence>
-        {isLocked && <LockScreen onUnlock={() => setIsLocked(false)} />}
-      </AnimatePresence>
-
-      <div 
-        style={{ height: viewportHeight }}
-        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed inset-0"
-      >
+    <div 
+      className="fixed inset-0 bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden"
+      style={{ height: viewportHeight }}
+    >
+      <div className="flex h-full w-full relative">
         {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
         <div className={cn(
           "flex-col border-r border-[#141414] transition-all duration-300",
@@ -126,9 +101,9 @@ export default function App() {
             {activeChatId && activeChatId !== 'new' ? (
               <motion.div 
                 key={activeChatId}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="w-full h-full"
               >
                 <ChatWindow chatId={activeChatId} onBack={() => setActiveChatId(null)} currentPeerId={peerId} />
@@ -141,6 +116,20 @@ export default function App() {
           </AnimatePresence>
         </div>
       </div>
-    </>
+
+      {/* Lock Screen Overlay */}
+      <AnimatePresence>
+        {isLocked && (
+          <motion.div
+            key="lock-screen"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-[#050505]"
+          >
+            <LockScreen onUnlock={() => setIsLocked(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

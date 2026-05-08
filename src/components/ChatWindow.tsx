@@ -18,6 +18,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [showMenu, setShowMenu] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
