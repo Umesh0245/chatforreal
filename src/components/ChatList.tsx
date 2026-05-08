@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, Shield, Share2, Plus, Search, Trash2, Ban, Cpu, Sun, Moon, Scan, Bell, BellOff } from 'lucide-react';
+import { Activity, Shield, Share2, Plus, Search, Trash2, Ban, Cpu, Sun, Moon, Scan, Bell, BellOff, Settings as SettingsIcon } from 'lucide-react';
 import { db, type Conversation } from '../lib/db';
 import { cn, formatDate } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -9,32 +9,18 @@ interface ChatListProps {
   activeChatId: string | null;
   currentPeerId: string | null;
   onOpenScanner: () => void;
+  onOpenSettings: () => void;
 }
 
-export function ChatList({ onSelectChat, activeChatId, currentPeerId, onOpenScanner }: ChatListProps) {
+export function ChatList({ onSelectChat, activeChatId, currentPeerId, onOpenScanner, onOpenSettings }: ChatListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('ghost_theme') as 'dark' | 'light') || 'dark';
-  });
   const [notifPermission, setNotifPermission] = useState(Notification.permission);
 
   const requestNotif = async () => {
     const res = await Notification.requestPermission();
     setNotifPermission(res);
   };
-
-  useEffect(() => {
-    const root = window.document.documentElement;
-    if (theme === 'light') {
-      root.classList.add('light');
-    } else {
-      root.classList.remove('light');
-    }
-    localStorage.setItem('ghost_theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     const loadConversations = async () => {
@@ -74,11 +60,11 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId, onOpenScan
               {notifPermission === 'granted' ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
             </button>
             <button 
-              onClick={toggleTheme}
+              onClick={onOpenSettings}
               className="p-2 border border-[var(--border-color)] text-[var(--fg-app)] rounded-xl hover:bg-[var(--bg-input)] transition-all active:scale-95"
-              aria-label="Toggle theme"
+              aria-label="Toggle settings"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              <SettingsIcon className="w-4 h-4" />
             </button>
             <button 
               onClick={onOpenScanner}

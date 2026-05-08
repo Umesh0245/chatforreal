@@ -1,15 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Activity, Terminal } from 'lucide-react';
 import { ChatList } from './components/ChatList';
 import { ChatWindow } from './components/ChatWindow';
 import { Welcome } from './components/Welcome';
 import { LockScreen } from './components/LockScreen';
 import { Scanner } from './components/Scanner';
+import { Settings } from './components/Settings';
 import { cleanupOldMessages, db } from './lib/db';
 import { cn } from './lib/utils';
 import { ghostPeer } from './lib/peer';
 import { motion, AnimatePresence } from 'motion/react';
-import { Cpu } from 'lucide-react';
+import { Cpu, Terminal, Activity } from 'lucide-react';
 
 export default function App() {
   const [peerId, setPeerId] = useState<string | null>(null);
@@ -17,8 +17,22 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [viewportHeight, setViewportHeight] = useState('100dvh');
   const [viewportTop, setViewportTop] = useState(0);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('ghost_theme') as 'dark' | 'light') || 'dark';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'light') {
+      root.classList.add('light');
+    } else {
+      root.classList.remove('light');
+    }
+    localStorage.setItem('ghost_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -146,27 +160,40 @@ export default function App() {
 
   return (
     <>
+      {/* Signal Status Bar */}
       <AnimatePresence>
-        {(!isOnline || outboxCount > 0) && (
+        {(outboxCount > 0 || !isOnline) && (
           <motion.div 
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            className="fixed top-0 left-0 right-0 z-[600] bg-red-500 text-black py-1 px-4 flex items-center justify-center gap-4 border-b border-black/10 shadow-lg pointer-events-none"
-            style={{ paddingTop: 'max(4px, env(safe-area-inset-top))' }}
+            initial={{ y: -40 }}
+            animate={{ y: 0 }}
+            exit={{ y: -40 }}
+            className={cn(
+              "fixed top-0 left-0 right-0 z-[600] py-1 px-4 flex items-center justify-center gap-6 border-b shadow-lg transition-colors duration-500",
+              isOnline ? "bg-green-500 border-green-600 text-black" : "bg-red-500 border-red-600 text-black"
+            )}
+            style={{ 
+              paddingTop: 'max(4px, env(safe-area-inset-top))',
+              height: '32px'
+            }}
           >
             <div className="flex items-center gap-2">
-              <Activity className={cn("w-3 h-3", isOnline ? "text-black" : "animate-pulse")} />
-              <span className="text-[9px] font-mono font-bold uppercase tracking-widest leading-none">
-                {isOnline ? 'SIGNAL:STABLE' : 'SIGNAL:LOST_OFFLINE_MODE'}
+              <Activity className={cn("w-3 h-3", !isOnline && "animate-pulse")} />
+              <span className="text-[8px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
+                SIGNAL::{isOnline ? 'STABLE' : 'LOST'}
               </span>
             </div>
             {outboxCount > 0 && (
               <div className="flex items-center gap-2 border-l border-black/20 pl-4">
                 <Terminal className="w-3 h-3 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold uppercase tracking-widest leading-none">
-                  OUTBOX_PENDING::{outboxCount}
+                <span className="text-[8px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
+                  PENDING_BUFFERS::{outboxCount}
                 </span>
+                <button 
+                  onClick={() => ghostPeer.init()}
+                  className="ml-2 bg-black/10 hover:bg-black/20 px-2 py-0.5 rounded text-[7px] border border-black/10 transition-all active:scale-95 pointer-events-auto"
+                >
+                  RETRY_SYNC
+                </button>
               </div>
             )}
           </motion.div>
@@ -174,76 +201,80 @@ export default function App() {
       </AnimatePresence>
 
       <div 
-        className="bg-[var(--bg-app)] text-[var(--fg-app)] font-sans selection:bg-[var(--accent)] selection:text-[#050505] overflow-hidden w-full fixed inset-0"
+        className="bg-[var(--bg-app)] text-[var(--fg-app)] font-sans selection:bg-[var(--accent)] selection:text-[#050505] overflow-hidden w-full fixed inset-0 flex flex-col"
         style={{ 
           height: viewportHeight,
-          transform: `translateY(${viewportTop}px)`
+          transform: `translateY(${viewportTop}px)`,
+          paddingTop: (outboxCount > 0 || !isOnline) ? '32px' : '0px'
         }}
       >
+        <div className="flex flex-grow w-full relative h-full flex-row overflow-hidden">
+          {/* Sidebar */}
+          <div className={cn(
+            "flex-col border-r border-[var(--border-color)] transition-all duration-300 h-full",
+            activeChatId ? "hidden md:flex w-full md:w-80" : "flex w-full md:w-80"
+          )}>
+            <ChatList 
+              onSelectChat={setActiveChatId} 
+              activeChatId={activeChatId} 
+              currentPeerId={peerId} 
+              onOpenScanner={() => setShowScanner(true)}
+              onOpenSettings={() => setShowSettings(true)}
+            />
+          </div>
 
-      <div className="flex h-full w-full relative">
-        {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
-        <div className={cn(
-          "flex-col border-r border-[var(--border-color)] transition-all duration-300",
-          activeChatId ? "hidden md:flex w-full md:w-80" : "flex w-full md:w-80"
-        )}>
-          <ChatList 
-            onSelectChat={setActiveChatId} 
-            activeChatId={activeChatId} 
-            currentPeerId={peerId} 
-            onOpenScanner={() => setShowScanner(true)}
-          />
+          {/* Main Chat Area */}
+          <div className={cn(
+            "flex-grow bg-[var(--bg-app)] transition-all duration-300 relative h-full",
+            !activeChatId ? "hidden md:flex" : "flex"
+          )}>
+            <AnimatePresence mode="wait">
+              {activeChatId && activeChatId !== 'new' ? (
+                <motion.div 
+                  key={activeChatId}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="w-full h-full"
+                >
+                  <ChatWindow chatId={activeChatId} onBack={() => setActiveChatId(null)} currentPeerId={peerId} />
+                </motion.div>
+              ) : (
+                <div className="flex items-center justify-center w-full h-full p-8 text-center">
+                  <Welcome currentPeerId={peerId} onJoinChat={setActiveChatId} onOpenScanner={() => setShowScanner(true)} />
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* Main Chat Area */}
-        <div className={cn(
-          "flex-grow bg-[var(--bg-app)] transition-all duration-300 relative",
-          !activeChatId ? "hidden md:flex" : "flex"
-        )}>
-          <AnimatePresence mode="wait">
-            {activeChatId && activeChatId !== 'new' ? (
-              <motion.div 
-                key={activeChatId}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="w-full h-full"
-              >
-                <ChatWindow chatId={activeChatId} onBack={() => setActiveChatId(null)} currentPeerId={peerId} />
-              </motion.div>
-            ) : (
-              <div className="flex items-center justify-center w-full h-full p-8 text-center">
-                <Welcome currentPeerId={peerId} onJoinChat={setActiveChatId} onOpenScanner={() => setShowScanner(true)} />
-              </div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Components Overlay */}
+        <AnimatePresence>
+          {showSettings && (
+            <Settings 
+              onClose={() => setShowSettings(false)} 
+              onThemeChange={setTheme}
+              currentTheme={theme}
+            />
+          )}
+          {showScanner && (
+            <Scanner 
+              onScan={handleScan} 
+              onClose={() => setShowScanner(false)} 
+            />
+          )}
+          {isLocked && (
+            <motion.div
+              key="lock-screen"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-[var(--bg-app)]"
+            >
+              <LockScreen onUnlock={() => setIsLocked(false)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-
-      {/* Lock Screen Overlay */}
-      <AnimatePresence>
-        {isLocked && (
-          <motion.div
-            key="lock-screen"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-[var(--bg-app)]"
-          >
-            <LockScreen onUnlock={() => setIsLocked(false)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* QR Scanner Overlay */}
-      <AnimatePresence>
-        {showScanner && (
-          <Scanner 
-            onScan={handleScan} 
-            onClose={() => setShowScanner(false)} 
-          />
-        )}
-      </AnimatePresence>
-    </div>
     </>
   );
 }
