@@ -1,0 +1,17 @@
+{
+  "name": "Flux Buffer",
+  "short_name": "Flux",
+  "description": "P2P data buffer management.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#F27D26",
+  "icons": [
+    {
+      "src": "/pulse_monitor_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

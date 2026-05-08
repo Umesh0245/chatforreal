@@ -1,0 +1,10 @@
+{
+  "name": "Flux Buffer",
+  "description": "High-performance P2P data streaming and buffer management kernel. Monitor node health and signal stability.",
+  "requestFramePermissions": [
+    "camera",
+    "notifications",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
