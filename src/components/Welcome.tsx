@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Activity, Share2, Smartphone, ArrowRight, Plus, Terminal, Cpu, Scan } from 'lucide-react';
+import { Activity, Share2, Smartphone, ArrowRight, Plus, Terminal, Cpu, Scan, RefreshCw } from 'lucide-react';
 import { generateKey } from '../lib/crypto';
 import { db } from '../lib/db';
 import { ghostPeer } from '../lib/peer';
@@ -82,7 +82,8 @@ export function Welcome({ currentPeerId, onJoinChat, onOpenScanner }: WelcomePro
     const name = customName.trim() || `BUFFER-${Math.floor(Math.random() * 900) + 100}`;
     localStorage.setItem('ghost_user_name', name);
     
-    const url = new URL(window.location.href);
+    // Explicitly use window.location.origin to ensure absolute URL for QR
+    const url = new URL(window.location.origin + window.location.pathname);
     url.searchParams.set('rid', rid);
     url.searchParams.set('key', key);
     url.searchParams.set('name', name);

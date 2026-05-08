@@ -21,7 +21,7 @@ export default function App() {
   const [viewportHeight, setViewportHeight] = useState('100dvh');
   const [viewportTop, setViewportTop] = useState(0);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('ghost_theme') as 'dark' | 'light') || 'dark';
+    return (localStorage.getItem('ghost_theme') as 'dark' | 'light') || 'light';
   });
 
   useEffect(() => {
@@ -222,44 +222,36 @@ export default function App() {
           </div>
         </div>
 
-        {/* Global Connection Status Pane (Ergonomic Mobile Position) */}
+        {/* Peer Status Floating Pill (Optimized for Mobile) */}
         <AnimatePresence>
           {(outboxCount > 0 || peerStatus !== 'connected' || !isOnline) && (
             <motion.div 
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
+              initial={{ y: 20, opacity: 0, x: '-50%' }}
+              animate={{ y: 0, opacity: 1, x: '-50%' }}
+              exit={{ y: 20, opacity: 0, x: '-50%' }}
               className={cn(
-                "fixed bottom-4 left-4 right-4 z-[400] p-3 rounded-2xl border backdrop-blur-xl flex items-center justify-between gap-4 shadow-2xl transition-colors duration-500",
-                isOnline && peerStatus === 'connected' ? "bg-green-500/90 border-green-400 text-black" : 
-                isOnline && peerStatus === 'connecting' ? "bg-amber-400/90 border-amber-300 text-black" :
-                "bg-red-500/90 border-red-400 text-white"
+                "fixed bottom-6 left-1/2 -translate-x-1/2 z-[1500] px-4 py-2.5 rounded-full border shadow-[0_12px_40px_rgba(0,0,0,0.2)] backdrop-blur-2xl flex items-center gap-3 transition-colors duration-500",
+                isOnline && peerStatus === 'connected' ? "bg-green-500 border-green-400 text-black" : 
+                isOnline && peerStatus === 'connecting' ? "bg-amber-400 border-amber-300 text-black" :
+                "bg-red-500 border-red-400 text-white"
               )}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  peerStatus === 'connected' ? "bg-black" : "bg-black animate-ping"
+                  "w-1.5 h-1.5 rounded-full",
+                  peerStatus === 'connected' ? "bg-black" : (isOnline ? "bg-black animate-pulse" : "bg-white animate-pulse")
                 )} />
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
-                    {!isOnline ? 'SIGNAL:OFFLINE' : `SIGNAL:${peerStatus.toUpperCase()}`}
-                  </span>
-                  {outboxCount > 0 && (
-                    <span className="text-[8px] font-mono opacity-80 uppercase">
-                      OUTBOX::{outboxCount} BUFFER_PENDING
-                    </span>
-                  )}
-                </div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest whitespace-nowrap">
+                  {!isOnline ? 'OFFLINE' : peerStatus.toUpperCase()}
+                  {outboxCount > 0 && ` // OUTBOX:${outboxCount}`}
+                </span>
               </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => ghostPeer.init()}
-                  className="bg-black/20 hover:bg-black/30 px-3 py-1.5 rounded-xl text-[9px] border border-black/10 transition-all active:scale-95 font-bold uppercase tracking-widest"
-                >
-                  Sync_Kernel
-                </button>
-              </div>
+              <button 
+                onClick={() => ghostPeer.init()}
+                className="bg-black/10 hover:bg-black/20 px-2 py-1 rounded-lg text-[8px] font-bold uppercase border border-black/10 active:scale-90 transition-all"
+              >
+                Sync
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

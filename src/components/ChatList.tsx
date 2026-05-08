@@ -15,11 +15,25 @@ interface ChatListProps {
 export function ChatList({ onSelectChat, activeChatId, currentPeerId, onOpenScanner, onOpenSettings }: ChatListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifPermission, setNotifPermission] = useState(Notification.permission);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+  );
 
   const requestNotif = async () => {
-    const res = await Notification.requestPermission();
-    setNotifPermission(res);
+    if (typeof Notification === 'undefined') {
+      alert('Your browser does not support optical notifications. Try adding this app to your Home Screen.');
+      return;
+    }
+
+    try {
+      const res = await Notification.requestPermission();
+      setNotifPermission(res);
+      if (res === 'denied') {
+        alert('Notification permission denied. Please enable them in your device settings to receive seamless messages.');
+      }
+    } catch (e) {
+      console.error('Notification request error:', e);
+    }
   };
 
   useEffect(() => {
@@ -53,11 +67,15 @@ export function ChatList({ onSelectChat, activeChatId, currentPeerId, onOpenScan
               onClick={requestNotif}
               className={cn(
                 "p-2 border border-[var(--border-color)] rounded-xl transition-all active:scale-95 shrink-0",
-                notifPermission === 'granted' ? "text-[var(--accent)] border-[var(--accent)]/30" : "text-[var(--fg-muted)]"
+                notifPermission === 'granted' ? "text-green-500 border-green-500/30 bg-green-500/10" : 
+                notifPermission === 'denied' ? "text-red-500 border-red-500/30 bg-red-500/10" :
+                "text-[var(--fg-muted)] hover:bg-[var(--bg-input)]"
               )}
               aria-label="Toggle notifications"
             >
-              {notifPermission === 'granted' ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+              {notifPermission === 'granted' ? <Bell className="w-4 h-4" /> : 
+               notifPermission === 'denied' ? <BellOff className="w-4 h-4" /> : 
+               <Bell className="w-4 h-4 opacity-50" />}
             </button>
             <button 
               onClick={onOpenSettings}

@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+declare const self: ServiceWorkerGlobalScope;
+
 const CACHE_NAME = 'ghost-bridge-v1';
 const OFFLINE_URL = '/offline.html';
 
@@ -51,6 +53,6 @@ self.addEventListener('push', (event: any) => {
 self.addEventListener('notificationclick', (event: any) => {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow(event.notification.data)
+    self.clients.openWindow(event.notification.data)
   );
 });

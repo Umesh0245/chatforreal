@@ -10,16 +10,7 @@
 }
 
 :root {
-  --bg-app: #050505;
-  --fg-app: #E4E3E0;
-  --bg-surface: #0a0a0a;
-  --bg-input: #151619;
-  --border-color: #141414;
-  --accent: #F27D26;
-  --fg-muted: rgba(228, 227, 224, 0.4);
-}
-
-:root.light {
+  /* Default: LIGHT (Bright) */
   --bg-app: #f9f9f8;
   --fg-app: #141414;
   --bg-surface: #ffffff;
@@ -27,6 +18,16 @@
   --border-color: #e5e5e3;
   --accent: #F27D26;
   --fg-muted: rgba(20, 20, 20, 0.5);
+}
+
+[data-theme='dark'] {
+  --bg-app: #050505;
+  --fg-app: #E4E3E0;
+  --bg-surface: #0a0a0a;
+  --bg-input: #151619;
+  --border-color: #141414;
+  --accent: #F27D26;
+  --fg-muted: rgba(228, 227, 224, 0.4);
 }
 
 html,
@@ -42,6 +43,8 @@ body,
   position: fixed;
   inset: 0;
   overscroll-behavior: none;
+  font-family: "Inter", sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
@@ -67,6 +70,12 @@ textarea,
 [contenteditable="true"] {
   user-select: text !important;
   -webkit-user-select: text !important;
+  font-size: 16px !important; /* Prevent iOS zoom */
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 @layer base {
@@ -87,10 +96,18 @@ textarea,
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #141414;
+    background: var(--border-color);
     border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #F27D26;
+    background: var(--accent);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

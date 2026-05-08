@@ -97,7 +97,7 @@ class GhostPeer {
           const chat = await db.conversations.filter(c => c.partnerUid === call.peer).first();
           const senderDisplay = chat?.partnerName || 'REMOTE_PEER';
 
-          if (Notification.permission === 'granted') {
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             const notification = new Notification(`INCOMING_LINK [${senderDisplay}]`, {
               body: "SECURE_P2P_VOICE_STREAM_INITIATED",
               icon: 'https://img.icons8.com/fluency/512/link.png',
@@ -108,6 +108,10 @@ class GhostPeer {
               window.focus();
               notification.close();
             };
+          }
+          
+          if ('vibrate' in navigator) {
+            navigator.vibrate([100, 50, 100]);
           }
           this.onCallIncoming?.(call);
         });
@@ -250,7 +254,7 @@ class GhostPeer {
 
           this.onMessage?.(rid, `[SIGNAL]: Incoming request from ${senderDisplay}`);
           
-          if (Notification.permission === 'granted') {
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             const notification = new Notification(`CALL_SIGNAL [${senderDisplay}]`, {
               body: "REMOTE_PEER_ATTEMPTING_INIT",
               icon: 'https://img.icons8.com/fluency/512/link.png',
@@ -261,6 +265,10 @@ class GhostPeer {
               window.focus();
               notification.close();
             };
+          }
+
+          if ('vibrate' in navigator) {
+            navigator.vibrate(50);
           }
         }
       }
@@ -287,7 +295,7 @@ class GhostPeer {
 
           const senderDisplay = chat.partnerName || 'REMOTE_PEER';
           
-          if (Notification.permission === 'granted') {
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             const notification = new Notification(`${senderDisplay}`, {
               body: decrypted,
               icon: 'https://img.icons8.com/fluency/512/link.png',
@@ -299,6 +307,10 @@ class GhostPeer {
               window.focus();
               notification.close();
             };
+          }
+
+          if ('vibrate' in navigator) {
+            navigator.vibrate(100);
           }
         }
       }

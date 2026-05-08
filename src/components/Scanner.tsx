@@ -36,38 +36,53 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
           aspectRatio: 1.0
         };
 
-        // Strict priority 1: Environment (Back) camera
-        try {
-          await qrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => {
-              onScan(decodedText);
-              stopScanner();
-            },
-            () => {} 
-          );
-        } catch (e) {
-          console.warn("Back camera failed, searching for any camera...", e);
-          
-          const devices = await Html5Qrcode.getCameras();
-          if (!devices || devices.length === 0) {
-            throw new Error("Optical sensor not detected.");
+        // Aggressive back camera selection
+        const startScanner = async () => {
+          try {
+            await qrCode.start(
+              { facingMode: { exact: "environment" } },
+              config,
+              (decodedText) => {
+                onScan(decodedText);
+                stopScanner();
+              },
+              () => {} 
+            );
+          } catch (e) {
+            console.warn("Retrying without 'exact' constraint...", e);
+            try {
+              await qrCode.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText) => {
+                  onScan(decodedText);
+                  stopScanner();
+                },
+                () => {}
+              );
+            } catch (e2) {
+              console.warn("Back camera failed, searching for any camera...", e2);
+              const devices = await Html5Qrcode.getCameras();
+              if (devices && devices.length > 0) {
+                // Pick the last one (usually back)
+                const backCam = devices[devices.length - 1];
+                await qrCode.start(
+                  backCam.id,
+                  config,
+                  (decodedText) => {
+                    onScan(decodedText);
+                    stopScanner();
+                  },
+                  () => {}
+                );
+              } else {
+                throw e2;
+              }
+            }
           }
+        };
 
-          // Try the last device (often the primary back camera on many mobiles)
-          const lastCamera = devices[devices.length - 1];
-          await qrCode.start(
-            lastCamera.id,
-            config,
-            (decodedText) => {
-              onScan(decodedText);
-              stopScanner();
-            },
-            () => {}
-          );
-        }
-        
+        await startScanner();
         setIsInitializing(false);
       } catch (err: any) {
         console.error("Scanner initialization failed", err);

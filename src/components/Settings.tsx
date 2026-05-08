@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { X, Shield, Moon, Sun, User, Trash2, Key, RotateCcw, ArrowLeft } from 'lucide-react';
-import { motion } from 'motion/react';
+import { useState, useEffect } from 'react';
+import { X, Shield, Moon, Sun, User, Trash2, Key, RotateCcw, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../lib/db';
 import { ghostPeer } from '../lib/peer';
 
@@ -14,18 +14,30 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
   const [userName, setUserName] = useState(localStorage.getItem('ghost_user_name') || '');
   const [showPinChange, setShowPinChange] = useState(false);
   const [newPin, setNewPin] = useState('');
-  const [pinSaved, setPinSaved] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const showToast = (message: string, type: 'success' | 'info' = 'success') => {
+    setToast({ message, type });
+  };
 
   const saveName = () => {
     localStorage.setItem('ghost_user_name', userName);
+    showToast('Identity Alias Synchronized');
   };
 
   const handlePinChange = () => {
     if (newPin.length === 4) {
       localStorage.setItem('ghost_pin', newPin);
-      setPinSaved(true);
-      setTimeout(() => setPinSaved(false), 2000);
+      showToast('Master Access PIN Updated');
       setNewPin('');
+      setShowPinChange(false);
     }
   };
 
@@ -38,8 +50,8 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
   };
 
   const flushOutbox = async () => {
-    console.log('Kernel: Manually triggering outbox flush...');
-    ghostPeer.init(); // Re-init to trigger connection checks
+    showToast('Signal Outbox Flushed', 'info');
+    ghostPeer.init(); 
   };
 
   return (
@@ -66,26 +78,46 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
         </button>
       </header>
 
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[1100] bg-black text-white px-6 py-3 rounded-2xl flex items-center gap-3 shadow-2xl border border-white/10"
+          >
+            <CheckCircle2 className="w-4 h-4 text-green-400" />
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex-grow overflow-y-auto p-6 space-y-8 pb-32">
         {/* Profile Section */}
         <section className="space-y-4">
           <h3 className="text-[10px] font-mono text-[var(--fg-muted)] uppercase tracking-[0.2em] px-1">Identity_Kernel</h3>
           <div className="p-4 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-color)] space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-mono uppercase text-[var(--fg-muted)]">Local_Alias</label>
-              <div className="flex gap-2">
-                <div className="flex-grow relative">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono uppercase text-[var(--fg-muted)]">Local_Alias</label>
+                <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--fg-muted)]" />
                   <input 
                     type="text" 
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
-                    onBlur={saveName}
                     placeholder="Enter Alias..."
-                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl py-2 pl-10 pr-4 text-sm focus:border-[var(--accent)] outline-none transition-all"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl py-3 pl-10 pr-4 text-sm focus:border-[var(--accent)] outline-none transition-all"
                   />
                 </div>
               </div>
+              <button 
+                onClick={saveName}
+                className="w-full py-3 bg-[var(--accent)] text-[#050505] rounded-xl font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-[var(--accent)]/10"
+              >
+                SYNC_IDENTITY_PROFILE
+              </button>
             </div>
           </div>
         </section>
@@ -96,17 +128,17 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
           <div className="grid grid-cols-2 gap-3">
             <button 
               onClick={() => onThemeChange('dark')}
-              className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${currentTheme === 'dark' ? 'bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]' : 'bg-[var(--bg-surface)] border-[var(--border-color)] opacity-60'}`}
+              className={`p-6 rounded-2xl border flex flex-col items-center gap-3 transition-all ${currentTheme === 'dark' ? 'bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]' : 'bg-[var(--bg-surface)] border-[var(--border-color)] opacity-60'}`}
             >
-              <Moon className="w-5 h-5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Dark_Mode</span>
+              <Moon className="w-6 h-6" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Dark_Core</span>
             </button>
             <button 
               onClick={() => onThemeChange('light')}
-              className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${currentTheme === 'light' ? 'bg-[var(--accent)] border-transparent text-[#050505]' : 'bg-[var(--bg-surface)] border-[var(--border-color)] opacity-60'}`}
+              className={`p-6 rounded-2xl border flex flex-col items-center gap-3 transition-all ${currentTheme === 'light' ? 'bg-[var(--accent)] border-transparent text-[#050505] shadow-lg shadow-[var(--accent)]/20' : 'bg-[var(--bg-surface)] border-[var(--border-color)] opacity-60'}`}
             >
-              <Sun className="w-5 h-5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Light_Mode</span>
+              <Sun className="w-6 h-6" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Light_Core</span>
             </button>
           </div>
         </section>
@@ -120,7 +152,7 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
                 <Key className="w-4 h-4 text-[var(--fg-muted)]" />
                 <span className="text-xs uppercase font-mono">Access_PIN</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-4">
                 <button 
                   onClick={() => setShowPinChange(!showPinChange)}
                   className="text-[10px] text-[var(--accent)] uppercase font-bold hover:underline"
@@ -132,7 +164,8 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
                     onClick={() => {
                       if(confirm('Disable PIN lock?')) {
                         localStorage.removeItem('ghost_pin');
-                        window.location.reload();
+                        showToast('PIN Lock Disabled', 'info');
+                        setTimeout(() => window.location.reload(), 1000);
                       }
                     }}
                     className="text-[10px] text-red-500 uppercase font-bold hover:underline"
@@ -149,15 +182,15 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
                   maxLength={4}
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                  placeholder="New 4-Digit PIN"
-                  className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl py-2 px-4 text-center tracking-[1em] font-mono outline-none focus:border-[var(--accent)]"
+                  placeholder="NEW 4-DIGIT KEY"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl py-4 px-4 text-center tracking-[1em] font-mono text-lg outline-none focus:border-[var(--accent)]"
                 />
                 <button 
                   onClick={handlePinChange}
                   disabled={newPin.length !== 4}
-                  className="w-full py-2 bg-[var(--accent)] text-[#050505] rounded-xl font-bold text-[10px] uppercase tracking-widest disabled:opacity-30"
+                  className="w-full py-4 bg-[var(--accent)] text-[#050505] rounded-xl font-bold text-[10px] uppercase tracking-widest disabled:opacity-30 active:scale-95 transition-all"
                 >
-                  {pinSaved ? 'KEY_UPDATED' : 'UPDATE_SECURITY_KEY'}
+                  UPDATE_SECURITY_KEY
                 </button>
               </div>
             )}
@@ -170,7 +203,7 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
           <div className="flex flex-col gap-3">
             <button 
               onClick={flushOutbox}
-              className="w-full p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl flex items-center justify-between group hover:border-[var(--accent)]/30 transition-all"
+              className="w-full p-5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl flex items-center justify-between group hover:border-[var(--accent)]/30 transition-all active:scale-95"
             >
               <div className="flex items-center gap-3">
                 <RotateCcw className="w-4 h-4 text-[var(--accent)] group-hover:rotate-180 transition-transform duration-500" />
@@ -180,7 +213,7 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
             </button>
             <button 
               onClick={clearAllData}
-              className="w-full p-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center justify-between group hover:bg-red-500/10 transition-all"
+              className="w-full p-5 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center justify-between group hover:bg-red-500/10 transition-all active:scale-95"
             >
               <div className="flex items-center gap-3">
                 <Trash2 className="w-4 h-4 text-red-500" />
@@ -192,8 +225,8 @@ export function Settings({ onClose, onThemeChange, currentTheme }: SettingsProps
         </section>
       </div>
 
-      <div className="absolute bottom-6 left-6 right-6 p-4 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-color)] text-center">
-        <p className="text-[8px] font-mono text-[var(--fg-muted)] tracking-[0.3em] uppercase">Ghost_Bridge_Kernel v4.2.0 // E2EE_ACTIVE</p>
+      <div className="shrink-0 p-8 border-t border-[var(--border-color)] bg-[var(--bg-app)]">
+        <p className="text-[8px] font-mono text-[var(--fg-muted)] tracking-[0.4em] text-center uppercase opacity-50">Ghost_Bridge_Kernel v4.2.0 // E2EE_ACTIVE_STREAMS</p>
       </div>
     </motion.div>
   );
