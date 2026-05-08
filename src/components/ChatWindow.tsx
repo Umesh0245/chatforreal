@@ -183,8 +183,11 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#050505]">
-      <header className="p-4 border-b border-[#141414] flex items-center gap-4 bg-[#050505]/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
-        <button onClick={onBack} className="p-2 hover:bg-[#141414] rounded-full text-[#8E9299]">
+      <header 
+        className="px-4 pb-4 border-b border-[#141414] flex items-center gap-4 bg-[#050505]/90 backdrop-blur-md sticky top-0 z-10 shadow-sm"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
+        <button onClick={onBack} className="p-2 -ml-2 hover:bg-[#141414] rounded-full text-[#8E9299]">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-grow">

@@ -29,19 +29,21 @@ export default function App() {
     
     // Smooth scroll for input focus
     const handleFocus = () => {
-      setTimeout(() => {
-        window.scrollTo(0, 0);
-        document.body.scrollTop = 0;
-      }, 50);
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+        }, 50);
+      }
     };
     window.addEventListener('focusin', handleFocus);
     
-    // Prevent scrolling on body to fix keyboard bounce issues
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
+    // Base layout setup
+    document.documentElement.style.height = '100%';
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.height = '100%';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.overflow = 'hidden';
     document.body.style.backgroundColor = '#050505';
 
     return () => {
@@ -91,7 +93,7 @@ export default function App() {
 
       <div 
         style={{ height: viewportHeight, top: viewportTop }}
-        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed left-0 right-0"
+        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed left-0 right-0 touch-none"
       >
         {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
         <div className={cn(

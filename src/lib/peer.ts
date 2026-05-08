@@ -74,7 +74,7 @@ class GhostPeer {
 
       if (type === 'handshake') {
         const chat = await db.conversations.get(rid);
-        // Link the room to the actual peer ID if it was 'waiting'
+        // Link the room to the actual peer ID
         if (chat && (chat.partnerUid === 'waiting' || chat.partnerUid !== peerId)) {
           await db.conversations.update(rid, {
             partnerUid: peerId,
@@ -82,9 +82,20 @@ class GhostPeer {
             updatedAt: Date.now()
           });
         }
-        // If we received a handshake, we should probably send one back to confirm
-        if (type === 'handshake' && senderId) {
-           this.connections.set(senderId, conn);
+        
+        // Register the connection for outgoing messages
+        this.connections.set(peerId, conn);
+
+        // If we received a handshake with a senderId and we haven't sent ours yet, respond back
+        // This ensures the initiator also gets the receiver's name/ID
+        if (senderId && type === 'handshake' && !data.isResponse) {
+          conn.send({
+            type: 'handshake',
+            rid,
+            senderId: this.peer?.id,
+            senderName: `PEER_${this.peer?.id.substring(0, 4)}`,
+            isResponse: true
+          });
         }
       }
 

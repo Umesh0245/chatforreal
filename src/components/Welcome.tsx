@@ -119,7 +119,7 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
               <div className="bg-[#050505] border border-[#141414] rounded-xl p-4 flex items-center gap-3">
                 <Smartphone className="w-5 h-5 text-[#8E9299]" />
                 <p className="text-[10px] font-mono text-[#8E9299] text-left">
-                  NOTE: IOS STORAGE IS SANDBOXED. IF YOU ADD TO HOME SCREEN, START A NEW BUFFER THERE.
+                  NOTE: IOS SANDBOX LIMITS. IF YOU "ADD TO HOME SCREEN", STORAGE IS FRESH. START NEW BRIDGE THERE.
                 </p>
               </div>
             </div>
@@ -127,9 +127,9 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
         ) : (
           <motion.div 
             key="step2"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#151619] border border-[#141414] rounded-3xl p-8 shadow-2xl text-center"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-[#151619] border border-[#141414] rounded-3xl p-6 md:p-8 shadow-2xl text-center w-full max-w-sm mx-auto"
           >
             <div className="mb-6 inline-block bg-white p-4 rounded-2xl border-4 border-[#F27D26]">
               <QRCodeSVG value={pairingUrl} size={180} />
