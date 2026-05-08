@@ -82,7 +82,7 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
   };
 
   return (
-    <div className="max-w-md w-full">
+    <div className="max-w-md w-full px-4 mx-auto">
       <AnimatePresence mode="wait">
         {step === 1 ? (
           <motion.div 
@@ -90,35 +90,35 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="bg-[#151619] border border-[#141414] rounded-3xl p-8 text-center shadow-2xl"
+            className="bg-[#151619] border border-[#141414] rounded-3xl p-6 md:p-8 text-center shadow-2xl"
           >
             <div className="w-16 h-16 bg-[#F27D26]/5 rounded-sm flex items-center justify-center mx-auto mb-6 border border-[#F27D26]/10 transform rotate-45">
               <div className="transform -rotate-45">
                 <Cpu className="w-8 h-8 text-[#F27D26]" />
               </div>
             </div>
-            <h2 className="text-2xl font-mono uppercase tracking-[0.4em] mb-2 text-[#E4E3E0]">BRIDGE_NODE[v4.0]</h2>
-            <p className="text-[#8E9299] text-[10px] font-mono mb-10 opacity-40 uppercase leading-relaxed text-center tracking-widest">
+            <h2 className="text-2xl font-mono uppercase tracking-[0.2em] mb-2 text-[#E4E3E0]">BRIDGE_NODE</h2>
+            <p className="text-[#8E9299] text-[9px] font-mono mb-10 opacity-40 uppercase leading-relaxed text-center tracking-widest px-4">
               SECURE_P2P_BRIDGE_ACTIVE // BUFFER_AUTO_WIPE
             </p>
             
             <div className="space-y-4">
               <button 
                 onClick={createRoom}
-                className="w-full bg-[#F27D26] text-[#050505] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#F27D26]/10"
+                className="w-full bg-[#F27D26] text-[#050505] font-mono py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#F27D26]/10 font-bold"
               >
                 <Plus className="w-5 h-5" /> INITIALIZE NODE BUFFER
               </button>
               
-              <div className="flex items-center gap-4 py-4">
+              <div className="flex items-center gap-4 py-2">
                 <div className="h-[1px] flex-grow bg-[#141414]" />
                 <span className="text-[10px] font-mono text-[#8E9299]">OFFLINE READY</span>
                 <div className="h-[1px] flex-grow bg-[#141414]" />
               </div>
 
-              <div className="bg-[#050505] border border-[#141414] rounded-xl p-4 flex items-center gap-3">
+              <div className="bg-[#050505]/50 border border-[#141414] rounded-xl p-4 flex items-center gap-3">
                 <Smartphone className="w-5 h-5 text-[#8E9299]" />
-                <p className="text-[10px] font-mono text-[#8E9299] text-left">
+                <p className="text-[9px] font-mono text-[#8E9299] text-left leading-tight">
                   NOTE: IOS SANDBOX LIMITS. IF YOU "ADD TO HOME SCREEN", STORAGE IS FRESH. START NEW BRIDGE THERE.
                 </p>
               </div>
@@ -131,7 +131,7 @@ export function Welcome({ currentPeerId, onJoinChat }: WelcomeProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             className="bg-[#151619] border border-[#141414] rounded-3xl p-6 md:p-8 shadow-2xl text-center w-full max-w-sm mx-auto"
           >
-            <div className="mb-6 inline-block bg-white p-4 rounded-2xl border-4 border-[#F27D26]">
+            <div className="mb-6 inline-flex bg-white p-4 rounded-2xl border-4 border-[#F27D26] mx-auto">
               <QRCodeSVG value={pairingUrl} size={180} />
             </div>
             

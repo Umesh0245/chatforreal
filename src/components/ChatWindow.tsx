@@ -184,20 +184,20 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
   return (
     <div className="flex flex-col h-full bg-[#050505]">
       <header 
-        className="px-4 pb-4 border-b border-[#141414] flex items-center gap-4 bg-[#050505]/90 backdrop-blur-md sticky top-0 z-10 shadow-sm"
-        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+        className="px-4 pb-3 border-b border-[#141414] flex items-center gap-3 bg-[#050505]/95 backdrop-blur-sm sticky top-0 z-30 shadow-sm shrink-0"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
-        <button onClick={onBack} className="p-2 -ml-2 hover:bg-[#141414] rounded-full text-[#8E9299]">
+        <button onClick={onBack} className="p-2 -ml-2 hover:bg-[#141414] rounded-full text-[#8E9299] shrink-0">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="flex-grow">
-          <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#F27D26]">
-            K-BRIDGE::{chat.partnerName}
+        <div className="flex-grow min-w-0">
+          <h2 className="text-[10px] font-mono uppercase tracking-[0.1em] text-[#F27D26] truncate">
+            {chat.partnerName}
           </h2>
-          <div className="flex items-center gap-1">
-            <Cpu className={cn("w-3 h-3 text-[#F27D26]/50 animate-pulse transition-colors", peerStatus === 'lost' && "text-red-500 animate-none")} />
-            <span className={cn("text-[9px] font-mono text-[#8E9299]/50 tracking-widest transition-colors", peerStatus === 'lost' && "text-red-500")}>
-              {peerStatus === 'stable' ? 'SIGNAL_STABLE_P2P' : 'SIGNAL_LOST_RECONNECTING'}
+          <div className="flex items-center gap-1.5 overflow-hidden">
+            <Cpu className={cn("w-2.5 h-2.5 text-[#F27D26]/50 animate-pulse shrink-0", peerStatus === 'lost' && "text-red-500 animate-none")} />
+            <span className={cn("text-[8px] font-mono text-[#8E9299]/50 tracking-widest truncate", peerStatus === 'lost' && "text-red-500")}>
+              {peerStatus === 'stable' ? 'SIGNAL:STABLE' : 'SIGNAL:LOST'}
             </span>
           </div>
         </div>
@@ -302,7 +302,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
         <div ref={scrollRef} className="h-4" />
       </div>
 
-      <footer className="p-3 border-t border-[#141414] bg-[#050505] relative z-20 pb-safe">
+      <footer className="p-2 border-t border-[#141414] bg-[#050505] shrink-0">
         <div className="max-w-4xl mx-auto">
           {chat.isBlocked ? (
             <div className="bg-red-900/10 border border-red-900/30 rounded-lg p-3 flex items-center justify-center gap-2 text-red-500/70 text-[10px] font-mono uppercase tracking-[0.3em]">
@@ -327,7 +327,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
                     scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
                   }, 400);
                 }}
-                className="flex-grow bg-transparent border-none py-3 px-3 text-sm focus:outline-none transition-all font-mono placeholder:opacity-30 min-h-[44px]"
+                className="flex-grow bg-transparent border-none py-2.5 px-3 text-base focus:outline-none transition-all font-mono placeholder:opacity-30 min-h-[44px]"
               />
               <button 
                 onClick={handleSend}
@@ -343,7 +343,7 @@ export function ChatWindow({ chatId, onBack, currentPeerId }: ChatWindowProps) {
               </button>
             </div>
           )}
-          <div className="h-[max(env(safe-area-inset-bottom),8px)]" />
+          <div className="h-[env(safe-area-inset-bottom)]" />
         </div>
       </footer>
     </div>

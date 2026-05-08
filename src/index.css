@@ -5,6 +5,19 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+html,
+body,
+#root {
+  background-color: #050505;
+  color: #E4E3E0;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: fixed; /* Keep the root locked */
+}
+
 @layer base {
   @keyframes scan {
     0% { top: 0%; }

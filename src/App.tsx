@@ -20,7 +20,6 @@ export default function App() {
     const handleResize = () => {
       if (window.visualViewport) {
         setViewportHeight(`${window.visualViewport.height}px`);
-        setViewportTop(window.visualViewport.offsetTop);
       }
     };
 
@@ -37,15 +36,6 @@ export default function App() {
     };
     window.addEventListener('focusin', handleFocus);
     
-    // Base layout setup
-    document.documentElement.style.height = '100%';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.height = '100%';
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    document.body.style.overflow = 'hidden';
-    document.body.style.backgroundColor = '#050505';
-
     return () => {
       window.visualViewport?.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('scroll', handleResize);
@@ -73,7 +63,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[100dvh] bg-[#050505] text-[#F27D26]">
+      <div className="flex items-center justify-center w-full h-full bg-[#050505] text-[#F27D26]">
         <motion.div 
           animate={{ opacity: [1, 0.5, 1] }}
           transition={{ duration: 1, repeat: Infinity }}
@@ -92,8 +82,8 @@ export default function App() {
       </AnimatePresence>
 
       <div 
-        style={{ height: viewportHeight, top: viewportTop }}
-        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed left-0 right-0 touch-none"
+        style={{ height: viewportHeight }}
+        className="flex bg-[#050505] text-[#E4E3E0] font-sans selection:bg-[#F27D26] selection:text-[#050505] overflow-hidden fixed inset-0"
       >
         {/* Sidebar for Desktop / Full screen on Mobile if no chat selected */}
         <div className={cn(
